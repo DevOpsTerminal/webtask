@@ -72,6 +72,9 @@ publish-test: build
 
 # Publish to PyPI (production)
 publish: check-publish
+	@echo "Bumping patch version..."
+	@poetry version patch
+	@$(MAKE) build
 	@echo "Publishing to PyPI..."
 	@echo "WARNING: This will publish to PyPI (production). This action cannot be undone."
 	@read -p "Are you sure you want to continue? (y/N): " confirm && [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]

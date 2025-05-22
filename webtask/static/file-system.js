@@ -494,8 +494,8 @@ module.exports = app;`,
     "jest": "^29.5.0",
     "eslint": "^8.41.0"
   },
-  "keywords": ["node", "express", "api", "webtop"],
-  "author": "WebTop Demo",
+  "keywords": ["node", "express", "api", "webtask"],
+  "author": "WebTask Demo",
   "license": "MIT"
 }`,
                                     mime_type: 'application/json'
@@ -773,7 +773,7 @@ function ports() {
     netstat -tulpn | grep LISTEN
 }
 
-echo "Welcome to WebTop Demo System!"`,
+echo "Welcome to WebTask Demo System!"`,
                             mime_type: 'text/plain'
                         }
                     }

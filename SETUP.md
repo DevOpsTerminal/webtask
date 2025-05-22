@@ -21,7 +21,7 @@ webtop/
 │   └── static/                 # Web assets
 │       ├── index.html
 │       ├── styles.css
-│       ├── webtop.js
+│       ├── webtask.js
 │       ├── process-data.js
 │       ├── file-system.js
 │       ├── file-icons.css
@@ -136,7 +136,7 @@ Copy each file from the artifacts to the correct location:
 ### Web Assets
 - [ ] `webtop/static/index.html` - Main HTML structure
 - [ ] `webtop/static/styles.css` - Core styling and layout
-- [ ] `webtop/static/webtop.js` - Main application logic
+- [ ] `webtop/static/webtask.js` - Main application logic
 - [ ] `webtop/static/process-data.js` - Process simulation engine
 - [ ] `webtop/static/file-system.js` - Virtual file system
 - [ ] `webtop/static/file-icons.css` - File type styling
@@ -314,7 +314,7 @@ webtop --no-browser
 
 ### Debug Mode
 
-For debugging, modify `webtop/static/webtop.js` and add:
+For debugging, modify `webtop/static/webtask.js` and add:
 
 ```javascript
 // Add at the top of WebTop class constructor

@@ -288,20 +288,20 @@ class webtask {
                     <span class="preview-icon">👁️</span>
                 </div>
                 <div class="kill-options">
-                    <button class="kill-btn" onclick="webTop.toggleKillDropdown(event, ${process.pid})">
+                    <button class="kill-btn" onclick="webtask.toggleKillDropdown(event, ${process.pid})">
                         KILL ▼
                     </button>
                     <div class="kill-dropdown" id="dropdown-${process.pid}">
-                        <div class="kill-option" onclick="webTop.killProcessWithSignal(${process.pid}, 'TERM')">
+                        <div class="kill-option" onclick="webtask.killProcessWithSignal(${process.pid}, 'TERM')">
                             SIGTERM (Graceful)
                         </div>
-                        <div class="kill-option danger" onclick="webTop.killProcessWithSignal(${process.pid}, 'KILL')">
+                        <div class="kill-option danger" onclick="webtask.killProcessWithSignal(${process.pid}, 'KILL')">
                             SIGKILL (Force)
                         </div>
-                        <div class="kill-option" onclick="webTop.killProcessWithSignal(${process.pid}, 'INT')">
+                        <div class="kill-option" onclick="webtask.killProcessWithSignal(${process.pid}, 'INT')">
                             SIGINT (Interrupt)
                         </div>
-                        <div class="kill-option" onclick="webTop.killProcessWithSignal(${process.pid}, 'HUP')">
+                        <div class="kill-option" onclick="webtask.killProcessWithSignal(${process.pid}, 'HUP')">
                             SIGHUP (Hangup)
                         </div>
                     </div>
@@ -617,11 +617,11 @@ class webtask {
         // Render breadcrumb
         const pathParts = this.currentPath.split('/').filter(Boolean);
         breadcrumbElement.innerHTML = `
-            <span class="breadcrumb-item" onclick="webTop.navigateToPath('/')">/</span>
+            <span class="breadcrumb-item" onclick="webtask.navigateToPath('/')">/</span>
             ${pathParts.map((part, index) => {
-                const path = '/' + pathParts.slice(0, index + 1).join('/');
-                return `<span class="breadcrumb-item" onclick="webTop.navigateToPath('${path}')">${part}</span>`;
-            }).join(' / ')}
+            const path = '/' + pathParts.slice(0, index + 1).join('/');
+            return `<span class="breadcrumb-item" onclick="webtask.navigateToPath('${path}')">${part}</span>`;
+        }).join(' / ')}
         `;
 
         // Get current directory
@@ -756,12 +756,12 @@ class webtask {
                     break;
                 case 'F10':
                     e.preventDefault();
-                    if (confirm('Really quit webtop?')) {
+                    if (confirm('Really quit webtask?')) {
                         window.close();
                     }
                     break;
                 case 'q':
-                    if (confirm('Really quit webtop?')) {
+                    if (confirm('Really quit webtask?')) {
                         window.close();
                     }
                     break;
@@ -784,5 +784,5 @@ class webtask {
     }
 }
 
-// Initialize webtop
-const webTop = new WebTop();
+// Initialize webtask
+const webtask = new WebTask();

@@ -1,6 +1,6 @@
 {
-    "name": "WebTop System Monitor",
-    "short_name": "WebTop",
+    "name": "WebTask System Monitor",
+    "short_name": "WebTask",
     "description": "A web-based system monitor inspired by htop",
     "start_url": "/",
     "display": "standalone",

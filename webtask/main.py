@@ -8,10 +8,10 @@ import argparse
 from .server import webtaskServer
 
 
-def main():
-    """Main entry point for WebTop"""
+def main() -> None:
+    """Main entry point for webtask"""
     parser = argparse.ArgumentParser(
-        description="WebTop - A web-based system monitor inspired by htop"
+        description="webtask - A web-based system monitor inspired by htop"
     )
     parser.add_argument(
         "--host",
@@ -32,23 +32,21 @@ def main():
     parser.add_argument(
         "--version",
         action="version",
-        version=f"WebTop {__import__('webtop').__version__}"
+        version="webtask 2.0.1"
     )
-    
     args = parser.parse_args()
-    
     try:
-        server = WebTopServer(
+        server = webtaskServer(
             host=args.host,
             port=args.port,
             open_browser=not args.no_browser
         )
         server.run()
     except KeyboardInterrupt:
-        print("\n👋 WebTop stopped by user")
+        print("\n👋 webtask stopped by user")
         sys.exit(0)
     except Exception as e:
-        print(f"❌ Error starting WebTop: {e}")
+        print(f"❌ Error starting webtask: {e}")
         sys.exit(1)
 
 

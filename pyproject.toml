@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "webtask"
-version = "2.0.0"
+version = "2.0.4"
 description = "A modern, web-based system monitor inspired by htop with file browser and process transparency"
 authors = ["Tom Sapletta <info@softreck.dev>"]
 readme = "README.md"
