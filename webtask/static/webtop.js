@@ -1,4 +1,4 @@
-class WebTop {
+class webtask {
     constructor() {
         this.processes = [];
         this.filteredProcesses = [];
@@ -283,7 +283,7 @@ class WebTop {
                 <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${process.command}">
                     ${process.command}
                 </div>
-                <div class="process-preview" onclick="webTop.showPreview(${process.pid})">
+                <div class="process-preview" onclick="webtask.showPreview(${process.pid})">
                     <div class="${thumbnail.class}">${thumbnail.content}</div>
                     <span class="preview-icon">👁️</span>
                 </div>

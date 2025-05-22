@@ -1,11 +1,11 @@
-# WebTop 🖥️
+# webtask 🖥️
 
-webtop python package to start web top version in browser, [kill] like a pro!
+webtask python package to start web top version in browser, [kill] like a pro!
 
 
 A modern, web-based system monitor inspired by htop with advanced file browsing, process transparency layers, and miniature file previews. Monitor your system processes through a sleek terminal-style web interface with real-time updates and comprehensive process management capabilities.
 
-![webtop-logo.svg](webtop-logo.svg)
+![webtask-logo.svg](webtask-logo.svg)
 
 ## ✨ Features
 
@@ -48,7 +48,7 @@ A modern, web-based system monitor inspired by htop with advanced file browsing,
 | `F5` | Toggle tree view |
 | `F6` | Change sort order |
 | `F9` | Kill selected process |
-| `F10` or `q` | Quit WebTop |
+| `F10` or `q` | Quit webtask |
 | `ESC` | Close modals/dropdowns |
 
 ## 🚀 Quick Start
@@ -56,33 +56,33 @@ A modern, web-based system monitor inspired by htop with advanced file browsing,
 ### Installation
 
 ```bash
-pip install webtop
+pip install webtask
 ```
 
 ### Usage
 
-Simply run the command to start WebTop:
+Simply run the command to start webtask:
 
 ```bash
-webtop
+webtask
 ```
 
 This will:
 1. Start a local web server on `http://localhost:8000`
-2. Automatically open WebTop in your default browser
+2. Automatically open webtask in your default browser
 3. Begin real-time system monitoring with file browser capabilities
 
 ### Advanced Usage
 
 ```bash
 # Custom host and port
-webtop --host 0.0.0.0 --port 9000
+webtask --host 0.0.0.0 --port 9000
 
 # Disable auto-browser opening
-webtop --no-browser
+webtask --no-browser
 
 # Check version
-webtop --version
+webtask --version
 ```
 
 ### Alternative Installation
@@ -90,10 +90,10 @@ webtop --version
 Using Poetry (for development):
 
 ```bash
-git clone https://github.com/devopsterminal/webtop.git
-cd webtop
+git clone https://github.com/devopsterminal/webtask.git
+cd webtask
 poetry install
-poetry run webtop
+poetry run webtask
 ```
 
 ## 🎨 Interface Overview
@@ -127,10 +127,10 @@ poetry run webtop
 
 ### **Modular Design**
 ```
-webtop/static/
+webtask/static/
 ├── index.html          # Main HTML structure
 ├── styles.css          # Core styling and responsive design
-├── webtop.js          # Main application logic
+├── webtask.js          # Main application logic
 ├── process-data.js    # Process simulation and data engine
 ├── file-system.js     # Virtual file system implementation
 ├── file-icons.css     # File type styling and icons

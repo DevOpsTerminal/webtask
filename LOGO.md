@@ -9,7 +9,7 @@
 ### **Feature Representations**
 1. **Terminal Interface** - Realistic terminal window with:
    - Classic red/yellow/green window controls
-   - "webtop" in the title bar
+   - "webtask" in the title bar
    - Real htop-style interface simulation
 
 2. **Process Monitoring** - Live-looking process data:
@@ -39,7 +39,7 @@
 - **Color progression** from green to yellow to red (low to high resource usage)
 
 ### **Brand Elements**
-- **"WebTop" text** prominently displayed
+- **"webtask" text** prominently displayed
 - **Version indicator** (v2.0)
 - **Consistent color scheme** matching the application
 

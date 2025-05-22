@@ -473,9 +473,9 @@ module.exports = app;`,
                                     owner: 'www-data',
                                     group: 'www-data',
                                     content: `{
-  "name": "webtop-demo-app",
+  "name": "webtask-demo-app",
   "version": "1.0.0",
-  "description": "Demo Node.js application for WebTop monitoring",
+  "description": "Demo Node.js application for webtask monitoring",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",

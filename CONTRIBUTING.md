@@ -371,7 +371,7 @@ make run-cli
 #### Adding a New CLI Command
 
 ```python
-# In webtop/cli/commands/new_command.py
+# In webtask/cli/commands/new_command.py
 import click
 from loglama.core.logger import get_logger
 
@@ -388,7 +388,7 @@ def new_command(param: str) -> None:
 #### Adding a New API Endpoint
 
 ```python
-# In webtop/api/routes/new_route.py
+# In webtask/api/routes/new_route.py
 from flask import Blueprint, request, jsonify
 from loglama.core.logger import get_logger
 
@@ -465,7 +465,7 @@ make view-logs    # Start web interface
 ### Example 1: Adding a New Log Filter
 
 ```python
-# Add to webtop/core/filters.py
+# Add to webtask/core/filters.py
 class DateRangeFilter:
     """Filter logs by date range."""
     

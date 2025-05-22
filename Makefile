@@ -4,31 +4,21 @@
 PORT ?= 8081
 HOST ?= 127.0.0.1
 PYTHON ?= python3
-VENV_NAME ?= venv
-VENV_ACTIVATE = . $(VENV_NAME)/bin/activate
 LOG_DIR ?= ./logs
 DB_PATH ?= $(LOG_DIR)/loglama.db
 EXAMPLE_DB_PATH ?= $(LOG_DIR)/example.db
 
-.PHONY: all setup venv install test test-unit test-integration test-ansible lint format clean run-api web run-example view-logs run-integration run-examples build publish publish-test check-publish help
+.PHONY: all setup install test test-unit test-integration test-ansible lint format clean run-api web run-example view-logs run-integration run-examples build publish publish-test check-publish help
 
 all: help
 
-# Create virtual environment
-venv:
-	@echo "Creating virtual environment..."
-	@$(PYTHON) -m venv $(VENV_NAME)
-	@echo "Virtual environment created at $(VENV_NAME)/"
-
 # Install dependencies
-install: venv
-	@echo "Installing dependencies..."
-	@$(VENV_ACTIVATE) && pip install --upgrade pip
-	@$(VENV_ACTIVATE) && pip install poetry
-	@$(VENV_ACTIVATE) && poetry install --with dev
+install:
+	@echo "Installing dependencies with Poetry..."
+	@poetry install --with dev
 	@echo "Dependencies installed."
 
-# Setup the project (create venv and install dependencies)
+# Setup the project (install dependencies)
 setup: install
 	@echo "LogLama setup completed."
 
@@ -37,83 +27,77 @@ test: test-unit test-integration
 	@echo "All tests completed."
 
 # Run unit tests
-# test-unit: venv
-# 	@echo "Running unit tests..."
-# 	@$(VENV_ACTIVATE) && pytest tests/unit/ -v
-
-test-unit: venv
+test-unit:
 	@echo "Running unit tests..."
-	@$(VENV_ACTIVATE) && pytest tests/ -v
+	@poetry run pytest tests/ -v
 
 # Run integration tests
-test-integration: venv
+test-integration:
 	@echo "Running integration tests..."
-	@$(VENV_ACTIVATE) && pytest tests/integration/ -v
+	@poetry run pytest tests/integration/ -v
 
 # Run Ansible tests
-test-ansible: venv
+test-ansible:
 	@echo "Running Ansible tests..."
-	@$(VENV_ACTIVATE) && ansible-playbook tests/ansible/test_loglama.yml -v
+	@poetry run ansible-playbook tests/ansible/test_loglama.yml -v
 
 # Run linting checks
-lint: venv
+lint:
 	@echo "Running linting checks..."
-	@$(VENV_ACTIVATE) && flake8 webtop/
-	@$(VENV_ACTIVATE) && mypy webtop/
+	@poetry run flake8 webtask/
+	@poetry run mypy webtask/
 
 # Format code
-format: venv
+format:
 	@echo "Formatting code..."
-	@$(VENV_ACTIVATE) && black webtop/
-	@$(VENV_ACTIVATE) && isort webtop/
+	@poetry run black webtask/
+	@poetry run isort webtask/
 
 # Build package with Poetry
-build: venv
+build:
 	@echo "Building package with Poetry..."
-	@$(VENV_ACTIVATE) && poetry build
+	@poetry build
 	@echo "Package built successfully. Artifacts in dist/"
 
 # Check if package is ready for publishing
-check-publish: venv lint test
-	@echo "Checking if package is ready for publishing..."
-	@$(VENV_ACTIVATE) && poetry check
-	@echo "Package is ready for publishing."
+check-publish: lint test
+	@echo "Ready to publish."
 
 # Publish to TestPyPI
-publish-test: venv build
+publish-test: build
 	@echo "Publishing to TestPyPI..."
-	@$(VENV_ACTIVATE) && poetry publish -r testpypi
+	@poetry publish -r testpypi
 	@echo "Published to TestPyPI. Test with:"
 	@echo "pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ loglama"
 
 # Publish to PyPI (production)
-publish: venv check-publish
+publish: check-publish
 	@echo "Publishing to PyPI..."
 	@echo "WARNING: This will publish to PyPI (production). This action cannot be undone."
 	@read -p "Are you sure you want to continue? (y/N): " confirm && [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]
-	@$(VENV_ACTIVATE) && poetry publish
+	@poetry publish
 	@echo "Published to PyPI. Install with: pip install loglama"
 
 # Full publishing workflow using the publish script
-publish-full: venv
+publish-full:
 	@echo "Running full publishing workflow..."
 	@chmod +x scripts/publish.sh
 	@./scripts/publish.sh
 
 # Dry run of the publishing process
-publish-dry-run: venv
+publish-dry-run:
 	@echo "Running dry run of publishing process..."
 	@chmod +x scripts/publish.sh
 	@./scripts/publish.sh --dry-run
 
 # Quick publish (skip tests and TestPyPI)
-publish-quick: venv
+publish-quick:
 	@echo "Running quick publish (skip tests and TestPyPI)..."
 	@chmod +x scripts/publish.sh
 	@./scripts/publish.sh --skip-tests --skip-testpypi
 
 # Configure PyPI credentials
-configure-pypi: venv
+configure-pypi:
 	@echo "Configuring PyPI credentials..."
 	@echo "You'll need API tokens from PyPI and TestPyPI"
 	@echo "Get them from:"
@@ -121,82 +105,82 @@ configure-pypi: venv
 	@echo "  TestPyPI: https://test.pypi.org/manage/account/token/"
 	@echo ""
 	@read -p "Enter PyPI token: " pypi_token && \
-		$(VENV_ACTIVATE) && poetry config pypi-token.pypi $$pypi_token
+		poetry config pypi-token.pypi $$pypi_token
 	@read -p "Enter TestPyPI token: " testpypi_token && \
-		$(VENV_ACTIVATE) && poetry config pypi-token.testpypi $$testpypi_token
+		poetry config pypi-token.testpypi $$testpypi_token
 	@echo "Credentials configured successfully."
 
 # Show current version
-version: venv
+version:
 	@echo "Current version:"
-	@$(VENV_ACTIVATE) && poetry version
+	@poetry version
 
 # Bump version (patch)
-version-patch: venv
+version-patch:
 	@echo "Bumping patch version..."
-	@$(VENV_ACTIVATE) && poetry version patch
+	@poetry version patch
 	@git add pyproject.toml
-	@git commit -m "Bump version to $$($(VENV_ACTIVATE) && poetry version -s)"
+	@git commit -m "Bump version to $$(poetry version -s)"
 
 # Bump version (minor)
-version-minor: venv
+version-minor:
 	@echo "Bumping minor version..."
-	@$(VENV_ACTIVATE) && poetry version minor
+	@poetry version minor
 	@git add pyproject.toml
-	@git commit -m "Bump version to $$($(VENV_ACTIVATE) && poetry version -s)"
+	@git commit -m "Bump version to $$(poetry version -s)"
 
 # Bump version (major)
-version-major: venv
+version-major:
 	@echo "Bumping major version..."
-	@$(VENV_ACTIVATE) && poetry version major
+	@poetry version major
 	@git add pyproject.toml
-	@git commit -m "Bump version to $$($(VENV_ACTIVATE) && poetry version -s)"
+	@git commit -m "Bump version to $$(poetry version -s)"
 
 # Run API server
-run-api: venv
+run-api:
 	@echo "Starting LogLama API server on $(HOST):$(PORT)..."
-	@$(VENV_ACTIVATE) && python -m loglama.api.server --host $(HOST) --port $(PORT)
+	@poetry run python -m loglama.api.server --host $(HOST) --port $(PORT)
 
 # Run web interface (legacy method)
 run-web: web
 
 # Run web interface with new command
-web: venv
+web:
 	@echo "Starting LogLama web interface on $(HOST):$(PORT)..."
-	@$(VENV_ACTIVATE) && python -m loglama.cli.main web --host $(HOST) --port $(PORT) --db $(DB_PATH)
+	@poetry run python -m loglama.cli.main web --host $(HOST) --port $(PORT) --db $(DB_PATH)
 
 # Run CLI
-run-cli: venv
+run-cli:
 	@echo "Starting LogLama CLI..."
-	@$(VENV_ACTIVATE) && python -m loglama.cli.main
+	@poetry run python -m loglama.cli.main
 
 # Run example application
-run-example: venv
+run-example:
 	@echo "Running example application..."
 	@mkdir -p $(LOG_DIR)
-	@$(VENV_ACTIVATE) && python examples/example_app.py --requests 20 --log-dir $(LOG_DIR) --db-path $(EXAMPLE_DB_PATH) --json
+	@poetry run python examples/example_app.py --requests 20 --log-dir $(LOG_DIR) --db-path $(EXAMPLE_DB_PATH) --json
 
 # Run multi-language examples
-run-examples: venv
+run-examples:
 	@echo "Running multi-language examples..."
 	@mkdir -p $(LOG_DIR)
-	@$(VENV_ACTIVATE) && python examples/multilanguage_examples.py
+	@poetry run python examples/multilanguage_examples.py
 
 # Run shell examples
-run-shell-examples: venv
+run-shell-examples:
 	@echo "Running shell examples..."
 	@mkdir -p $(LOG_DIR)
-	@$(VENV_ACTIVATE) && bash examples/shell_examples.sh
+	@poetry run bash examples/shell_examples.sh
 
 # View logs from example application
-view-logs: venv
+view-logs:
 	@echo "Starting web interface to view example logs on $(HOST):$(PORT)..."
-	@$(VENV_ACTIVATE) && python -m loglama.cli.web_viewer --host $(HOST) --port $(PORT) --db $(EXAMPLE_DB_PATH)
+	@poetry run python -m loglama.cli.web_viewer --host $(HOST) --port $(PORT) --db $(EXAMPLE_DB_PATH)
 
 # Run integration script to integrate LogLama into a component
-run-integration: venv
+run-integration:
 	@echo "Running LogLama integration script..."
-	@$(VENV_ACTIVATE) && python scripts/integrate_loglama.py --all
+	@poetry run python scripts/integrate_loglama.py --all
 
 # Clean up generated files
 clean:
@@ -211,7 +195,7 @@ help:
 	@echo "LogLama Makefile Commands:"
 	@echo ""
 	@echo "Setup and Development:"
-	@echo "  make setup          - Set up the project (create venv and install dependencies)"
+	@echo "  make setup          - Set up the project (install dependencies)"
 	@echo "  make test           - Run all tests"
 	@echo "  make test-unit      - Run unit tests"
 	@echo "  make test-integration - Run integration tests"
@@ -251,8 +235,6 @@ help:
 	@echo "Environment variables that can be set:"
 	@echo "  PORT              - Port for web/API server (default: 8081)"
 	@echo "  HOST              - Host for web/API server (default: 127.0.0.1)"
-	@echo "  PYTHON            - Python interpreter to use (default: python3)"
-	@echo "  VENV_NAME         - Name of virtual environment (default: venv)"
 	@echo "  LOG_DIR           - Directory for logs (default: ./logs)"
 	@echo "  DB_PATH           - Path to SQLite database (default: ./logs/loglama.db)"
 	@echo "  EXAMPLE_DB_PATH   - Path to example SQLite database (default: ./logs/example.db)"

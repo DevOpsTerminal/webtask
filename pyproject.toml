@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "webtop"
+name = "webtask"
 version = "2.0.0"
 description = "A modern, web-based system monitor inspired by htop with file browser and process transparency"
 authors = ["Tom Sapletta <info@softreck.dev>"]
 readme = "README.md"
-homepage = "https://github.com/devopsterminal/webtop"
-repository = "https://github.com/devopsterminal/webtop"
-documentation = "https://github.com/devopsterminal/webtop"
+homepage = "https://github.com/devopsterminal/webtask"
+repository = "https://github.com/devopsterminal/webtask"
+documentation = "https://github.com/devopsterminal/webtask"
 keywords = ["system", "monitor", "htop", "web", "processes", "file-browser", "transparency"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -26,7 +26,7 @@ classifiers = [
     "Topic :: System :: Systems Administration",
     "Topic :: Internet :: WWW/HTTP :: Browsers",
 ]
-packages = [{include = "webtop"}]
+packages = [{include = "webtask"}]
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -39,7 +39,7 @@ mypy = "^0.910"
 pytest-cov = "^4.0"
 
 [tool.poetry.scripts]
-webtop = "webtop.main:main"
+webtask = "webtask.main:main"
 
 [build-system]
 requires = ["poetry-core"]
@@ -58,4 +58,4 @@ disallow_untyped_defs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "--cov=webtop --cov-report=html --cov-report=term-missing"
+addopts = "--cov=webtask --cov-report=html --cov-report=term-missing"

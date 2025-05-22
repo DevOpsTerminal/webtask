@@ -34,7 +34,7 @@
 - Split monolithic HTML into separate files:
   - `index.html` - Main structure
   - `styles.css` - All styling and animations
-  - `webtop.js` - Main application logic
+  - `webtask.js` - Main application logic
   - `process-data.js` - Process simulation engine
   - `file-system.js` - Virtual file system
   - `file-icons.css` - File type styling
@@ -45,10 +45,10 @@
 
 ### File Structure
 ```
-webtop/static/
+webtask/static/
 ├── index.html          # Main HTML structure
 ├── styles.css          # Core styling and layout
-├── webtop.js          # Main application logic
+├── webtask.js          # Main application logic
 ├── process-data.js    # Process simulation engine
 ├── file-system.js     # Virtual file system
 ├── file-icons.css     # File type icons and styles
@@ -64,7 +64,7 @@ webtop/static/
 ## [1.0.0] - 2025-05-22
 
 ### Added
-- Initial release of WebTop
+- Initial release of webtask
 - Web-based system monitor with htop-inspired interface
 - Real-time CPU and memory usage monitoring
 - Process list with sorting capabilities

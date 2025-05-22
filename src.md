@@ -1,18 +1,18 @@
-webtop/
+webtask/
 ├── README.md
 ├── SETUP.md                    # This file
 ├── CHANGELOG.md
 ├── LICENSE
 ├── pyproject.toml
 ├── .gitignore
-├── webtop/                     # Python package
+├── webtask/                     # Python package
 │   ├── __init__.py
 │   ├── main.py
 │   ├── server.py
 │   └── static/                 # Web assets
 │       ├── index.html
 │       ├── styles.css
-│       ├── webtop.js
+│       ├── webtask.js
 │       ├── process-data.js
 │       ├── file-system.js
 │       ├── file-icons.css

@@ -97,15 +97,15 @@ If you set up documentation hosting:
 ### Minimal Badge Set (for new projects)
 ```markdown
 [![PyPI version](https://badge.fury.io/py/loglama.svg)](https://badge.fury.io/py/loglama)
-[![Python versions](https://img.shields.io/pypi/pyversions/loglama.svg)](https://pypi.org/project/webtop/)
+[![Python versions](https://img.shields.io/pypi/pyversions/loglama.svg)](https://pypi.org/project/webtask/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://github.com/py-lama/webtop/workflows/CI/badge.svg)](https://github.com/py-lama/webtop/actions)
+[![Build Status](https://github.com/py-lama/webtask/workflows/CI/badge.svg)](https://github.com/py-lama/webtask/actions)
 ```
 
 ### Extended Badge Set (for mature projects)
 Add these badges as your project grows:
 ```markdown
-[![Documentation Status](https://readthedocs.org/projects/webtop/badge/?version=latest)](https://loglama.readthedocs.io/en/latest/)
+[![Documentation Status](https://readthedocs.org/projects/webtask/badge/?version=latest)](https://loglama.readthedocs.io/en/latest/)
 [![Maintainability](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github/py-lama/webtop/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/test_coverage)](https://codeclimate.com/github/py-lama/webtop/test_coverage)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/loglama)](https://pypi.org/project/webtop/)

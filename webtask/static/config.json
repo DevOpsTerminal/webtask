@@ -1,5 +1,5 @@
 {
-    "webtop": {
+    "webtask": {
         "version": "2.0.0",
         "features": {
             "file_browser": true,

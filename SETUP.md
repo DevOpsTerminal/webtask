@@ -1,4 +1,4 @@
-# WebTop Setup Guide
+# webtask Setup Guide
 
 Complete setup instructions for the WebTop 2.0 project with file browser, process transparency, and miniature previews.
 

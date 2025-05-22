@@ -43,7 +43,7 @@
   <circle cx="60" cy="47.5" r="2" fill="#66ff66"/>
 
   <!-- Terminal title -->
-  <text x="75" y="51" font-family="monospace" font-size="6" fill="#00ff00">webtop</text>
+  <text x="75" y="51" font-family="monospace" font-size="6" fill="#00ff00">webtask</text>
 
   <!-- Process bars (simulating htop interface) -->
   <g filter="url(#glow)">
@@ -100,7 +100,7 @@
   </g>
 
   <!-- Brand name -->
-  <text x="100" y="185" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#00ff00" filter="url(#glow)">WebTop</text>
+  <text x="100" y="185" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#00ff00" filter="url(#glow)">webtask</text>
 
   <!-- Version indicator -->
   <text x="100" y="195" text-anchor="middle" font-family="monospace" font-size="6" fill="#666">v2.0</text>
