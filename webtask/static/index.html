@@ -96,14 +96,21 @@
     </div>
 
     <div class="main-content">
-        <div class="process-header">
-            <div class="sortable" data-sort="pid">INFO <span class="sort-icon">⇅</span></div>
-            <div class="sortable" data-sort="cpu">CPU% <span class="sort-icon">⇅</span></div>
-            <div class="sortable" data-sort="mem">MEM% <span class="sort-icon">⇅</span></div>
-            <div class="sortable" data-sort="port">PORT <span class="sort-icon">⇅</span></div>
-            <div class="sortable" data-sort="command">COMMAND <span class="sort-icon">⇅</span></div>
-            <div>PREVIEW</div>
-            <div>ACTIONS</div>
+        <div class="process-controls">
+            <div class="view-options">
+                <button class="view-option active" data-view="grid">Grid View</button>
+                <button class="view-option" data-view="list">List View</button>
+            </div>
+            <div class="sort-options">
+                <label>Sort by:</label>
+                <select id="sort-select">
+                    <option value="pid">Process ID</option>
+                    <option value="cpu" selected>CPU Usage</option>
+                    <option value="mem">Memory Usage</option>
+                    <option value="command">Command</option>
+                </select>
+                <button id="sort-direction" title="Toggle Sort Direction">⇅</button>
+            </div>
         </div>
         <div id="process-list"></div>
     </div>

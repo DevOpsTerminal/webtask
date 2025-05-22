@@ -135,6 +135,70 @@ body {
     clear: both;
 }
 
+.process-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #2a2a2a;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.view-options {
+    display: flex;
+    gap: 10px;
+}
+
+.view-option {
+    background: #333;
+    border: 1px solid #444;
+    color: #aaa;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-option.active {
+    background: #00aaff;
+    color: #fff;
+    border-color: #0088cc;
+}
+
+.sort-options {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-options label {
+    color: #aaa;
+}
+
+#sort-select {
+    background: #333;
+    color: #00ffff;
+    border: 1px solid #444;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+#sort-direction {
+    background: #333;
+    color: #00ffff;
+    border: 1px solid #444;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #process-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -165,8 +229,114 @@ body {
     border-color: #555;
 }
 
-.process-row:hover {
-    background: #2a2a2a;
+/* Process Card Components */
+.process-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #444;
+}
+
+.process-command-display {
+    flex-grow: 1;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #00ffff;
+}
+
+.process-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 0;
+}
+
+.process-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.metric-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.metric-label {
+    font-weight: bold;
+    color: #aaa;
+    width: 40px;
+}
+
+.metric-value {
+    font-weight: bold;
+    width: 50px;
+    text-align: right;
+}
+
+.metric-bar {
+    flex-grow: 1;
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.metric-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.cpu-fill {
+    background: linear-gradient(90deg, #00ff00, #ffff00, #ff0000);
+}
+
+.mem-fill {
+    background: linear-gradient(90deg, #00aaff, #0044ff);
+}
+
+.process-card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid #444;
+}
+
+.info-badge {
+    background: #333;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pid-badge {
+    background: #444;
+    color: #00ffff;
+}
+
+.user-badge {
+    background: #553355;
+    color: #ff88ff;
+}
+
+.time-badge {
+    background: #335533;
+    color: #88ff88;
+}
+
+.port-badge {
+    background: #553333;
+    color: #ff8888;
 }
 
 .process-row.high-cpu {
@@ -210,16 +380,33 @@ body {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    max-height: 100px;
+    height: 150px;
     cursor: pointer;
+    border-radius: 6px;
+    background: #222;
+    border: 1px solid #444;
 }
 
 .process-preview .preview-thumbnail {
     width: 100%;
     height: 100%;
-    max-height: 100px;
     margin: 0;
     border-radius: 4px;
+}
+
+/* Make the previews more compact for the card layout */
+.html-preview, 
+.code-preview, 
+.text-preview,
+.service-preview,
+.web-service-preview,
+.port-preview,
+.generic-preview {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .preview-thumbnail {
@@ -280,14 +467,12 @@ body {
 .process-actions {
     position: relative;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-end;
 }
 
 .action-buttons {
     display: flex;
-    gap: 8px;
+    gap: 4px;
 }
 
 .kill-button, .pause-button, .restart-button {
@@ -396,11 +581,11 @@ body {
     display: none;
     position: absolute;
     right: 0;
-    top: 100%;
+    top: 30px;
     background: #2a2a2a;
     border: 1px solid #666;
     border-radius: 6px;
-    min-width: 200px;
+    min-width: 240px;
     z-index: 1000;
     box-shadow: 0 4px 15px rgba(0,0,0,0.7);
     overflow: hidden;

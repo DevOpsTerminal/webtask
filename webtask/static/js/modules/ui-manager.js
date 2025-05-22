@@ -174,64 +174,53 @@ class UIManager {
         // Generate command with icon
         const commandWithIcon = this.generateCommandWithIcon(process);
         
-        // Create hierarchy indicator
-        let hierarchyIndicator = '';
-        if (process.level > 0) {
-            const indent = process.level * 20;
-            hierarchyIndicator = `<div class="hierarchy-indicator" style="width: ${indent}px"></div>`;
-        }
-        
         row.innerHTML = `
-            ${hierarchyIndicator}
-            <div class="sortable process-info" data-sort="pid">
-                <div class="info-item"><span class="info-label">PID:</span> ${process.pid}</div>
-                <div class="info-item"><span class="info-label">USER:</span> ${process.user}</div>
-                <div class="info-item"><span class="info-label">TIME:</span> ${process.time}</div>
-            </div>
-            <div class="sortable" data-sort="cpu">${process.cpu.toFixed(1)}</div>
-            <div class="sortable" data-sort="mem">${process.memory.toFixed(1)}</div>
-            <div class="sortable" data-sort="port">${process.port || '-'}</div>
-            <div class="sortable process-command" data-sort="command">
-                ${commandWithIcon}
-            </div>
-            <div class="process-preview">
-                ${thumbnail}
-            </div>
-            <div class="process-actions">
-                <div class="action-buttons">
-                    <button class="kill-button" data-pid="${process.pid}" title="Kill Process">
-                        <span class="kill-icon">×</span>
-                    </button>
-                    <button class="pause-button" data-pid="${process.pid}" title="Pause Process">
-                        <span class="pause-icon">⏸</span>
-                    </button>
-                    <button class="restart-button" data-pid="${process.pid}" title="Restart Process">
-                        <span class="restart-icon">⟳</span>
-                    </button>
-                    <button class="more-button" data-pid="${process.pid}" title="More Actions">
-                        <span class="more-icon">⋮</span>
-                    </button>
+            <div class="process-card-header">
+                <div class="process-command-display">${commandWithIcon}</div>
+                <div class="process-actions">
+                    <div class="action-buttons">
+                        <button class="kill-button" data-pid="${process.pid}" title="Kill Process">
+                            <span class="kill-icon">×</span>
+                        </button>
+                        <button class="more-button" data-pid="${process.pid}" title="More Actions">
+                            <span class="more-icon">⋮</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="kill-dropdown" id="dropdown-${process.pid}">
-                    <div class="kill-dropdown-header">Process Actions - PID ${process.pid}</div>
-                    <div class="kill-option" data-pid="${process.pid}" data-signal="TERM">
-                        <span class="signal-icon">✓</span> SIGTERM (Terminate)
-                    </div>
-                    <div class="kill-option" data-pid="${process.pid}" data-signal="KILL">
-                        <span class="signal-icon">⚡</span> SIGKILL (Force Kill)
-                    </div>
-                    <div class="kill-option" data-pid="${process.pid}" data-signal="INT">
-                        <span class="signal-icon">⏹</span> SIGINT (Interrupt)
-                    </div>
-                    <div class="kill-option" data-pid="${process.pid}" data-signal="HUP">
-                        <span class="signal-icon">🔄</span> SIGHUP (Restart)
-                    </div>
-                    <div class="kill-option" data-pid="${process.pid}" data-signal="STOP">
-                        <span class="signal-icon">⏸</span> SIGSTOP (Pause)
-                    </div>
-                    <div class="kill-option" data-pid="${process.pid}" data-signal="CONT">
-                        <span class="signal-icon">▶️</span> SIGCONT (Resume)
-                    </div>
+            </div>
+            
+            <div class="process-card-body">
+                <div class="process-preview">
+                    ${thumbnail}
+                </div>
+            </div>
+            
+            <div class="process-card-footer">
+                <div class="info-badge pid-badge" title="Process ID">${process.pid}</div>
+                <div class="info-badge user-badge" title="User">${process.user}</div>
+                <div class="info-badge time-badge" title="Process Time">${process.time}</div>
+                ${process.port ? `<div class="info-badge port-badge" title="Port">:${process.port}</div>` : ''}
+            </div>
+            
+            <div class="kill-dropdown" id="dropdown-${process.pid}">
+                <div class="kill-dropdown-header">Process Actions - PID ${process.pid}</div>
+                <div class="kill-option" data-pid="${process.pid}" data-signal="TERM">
+                    <span class="signal-icon">✓</span> SIGTERM (Terminate)
+                </div>
+                <div class="kill-option" data-pid="${process.pid}" data-signal="KILL">
+                    <span class="signal-icon">⚡</span> SIGKILL (Force Kill)
+                </div>
+                <div class="kill-option" data-pid="${process.pid}" data-signal="INT">
+                    <span class="signal-icon">⏹</span> SIGINT (Interrupt)
+                </div>
+                <div class="kill-option" data-pid="${process.pid}" data-signal="HUP">
+                    <span class="signal-icon">🔄</span> SIGHUP (Restart)
+                </div>
+                <div class="kill-option" data-pid="${process.pid}" data-signal="STOP">
+                    <span class="signal-icon">⏸</span> SIGSTOP (Pause)
+                </div>
+                <div class="kill-option" data-pid="${process.pid}" data-signal="CONT">
+                    <span class="signal-icon">▶️</span> SIGCONT (Resume)
                 </div>
             </div>
         `;
