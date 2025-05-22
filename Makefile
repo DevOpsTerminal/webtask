@@ -1,14 +1,20 @@
-# LogLama Makefile
+# WebTask Makefile
+
+# Load environment variables from .env file
+ifneq (,$(wildcard ./.env))
+    include .env
+    export $(shell sed 's/=.*//' .env)
+endif
 
 # Default values that can be overridden
-PORT ?= 8081
-HOST ?= 127.0.0.1
+PORT ?= 9000
+HOST ?= 0.0.0.0
 PYTHON ?= python3
 LOG_DIR ?= ./logs
 DB_PATH ?= $(LOG_DIR)/loglama.db
 EXAMPLE_DB_PATH ?= $(LOG_DIR)/example.db
 
-.PHONY: all setup install test test-unit test-integration test-ansible lint format clean run-api web run-example view-logs run-integration run-examples build publish publish-test check-publish help
+.PHONY: all setup install test test-unit test-integration test-ansible lint format clean run-api web run-example view-logs run-integration run-examples build publish publish-test check-publish help start stop restart status
 
 all: help
 
@@ -86,6 +92,25 @@ publish-full:
 	@echo "Running full publishing workflow..."
 	@chmod +x scripts/publish.sh
 	@./scripts/publish.sh
+
+# Start the WebTask server
+start:
+	@echo "Starting WebTask server on $(HOST):$(PORT)..."
+	@poetry run webtask --host $(HOST) --port $(PORT)
+
+# Stop the WebTask server
+stop:
+	@echo "Stopping WebTask server on port $(PORT)..."
+	@-pkill -f "webtask --host $(HOST) --port $(PORT)" || echo "No WebTask server found running on port $(PORT)"
+
+# Restart the WebTask server
+restart: stop start
+
+# Show status of WebTask server
+status:
+	@pgrep -f "webtask --host $(HOST) --port $(PORT)" > /dev/null && \
+		echo "WebTask server is running on $(HOST):$(PORT)" || \
+		echo "WebTask server is not running on $(HOST):$(PORT)"
 
 # Dry run of the publishing process
 publish-dry-run:

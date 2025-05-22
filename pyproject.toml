@@ -30,6 +30,7 @@ packages = [{include = "webtask"}]
 
 [tool.poetry.dependencies]
 python = "^3.7"
+psutil = "^5.9.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
