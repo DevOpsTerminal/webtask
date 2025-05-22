@@ -1,0 +1,113 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2a2a2a;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="screenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#003300;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#001100;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="processGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00ff00;stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#ffff00;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#ff6600;stop-opacity:0.4" />
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Main background -->
+  <circle cx="100" cy="100" r="95" fill="url(#bgGradient)" stroke="#333" stroke-width="2"/>
+
+  <!-- Terminal screen -->
+  <rect x="30" y="40" width="140" height="100" rx="5" ry="5" fill="url(#screenGradient)" stroke="#00ff00" stroke-width="1"/>
+
+  <!-- Terminal header bar -->
+  <rect x="30" y="40" width="140" height="15" rx="5" ry="5" fill="#444"/>
+  <rect x="30" y="47" width="140" height="8" fill="#333"/>
+
+  <!-- Terminal buttons -->
+  <circle cx="40" cy="47.5" r="2" fill="#ff6666"/>
+  <circle cx="50" cy="47.5" r="2" fill="#ffff66"/>
+  <circle cx="60" cy="47.5" r="2" fill="#66ff66"/>
+
+  <!-- Terminal title -->
+  <text x="75" y="51" font-family="monospace" font-size="6" fill="#00ff00">webtop</text>
+
+  <!-- Process bars (simulating htop interface) -->
+  <g filter="url(#glow)">
+    <!-- CPU bar -->
+    <rect x="40" y="65" width="50" height="4" fill="#333" stroke="#666" stroke-width="0.5"/>
+    <rect x="40" y="65" width="35" height="4" fill="url(#processGradient)"/>
+    <text x="95" y="68" font-family="monospace" font-size="5" fill="#00ff00">CPU 70%</text>
+
+    <!-- Memory bar -->
+    <rect x="40" y="75" width="50" height="4" fill="#333" stroke="#666" stroke-width="0.5"/>
+    <rect x="40" y="75" width="28" height="4" fill="url(#processGradient)"/>
+    <text x="95" y="78" font-family="monospace" font-size="5" fill="#00ff00">MEM 56%</text>
+
+    <!-- Process list simulation -->
+    <text x="40" y="90" font-family="monospace" font-size="4" fill="#00ffff">PID USER CPU% MEM% COMMAND</text>
+    <text x="40" y="97" font-family="monospace" font-size="4" fill="#00ff00">1234 root 15.2 8.1 nginx</text>
+    <text x="40" y="103" font-family="monospace" font-size="4" fill="#ffff66">5678 user 8.7 12.3 node app.js</text>
+    <text x="40" y="109" font-family="monospace" font-size="4" fill="#88ff88">9012 www  3.1 4.2 apache2</text>
+    <text x="40" y="115" font-family="monospace" font-size="4" fill="#ff8888">3456 mysql 22.1 18.7 mysqld</text>
+  </g>
+
+  <!-- Web symbol integration -->
+  <g transform="translate(150, 60)">
+    <!-- Globe/web icon -->
+    <circle cx="0" cy="0" r="12" fill="none" stroke="#00ffff" stroke-width="1.5" opacity="0.8"/>
+    <ellipse cx="0" cy="0" rx="12" ry="6" fill="none" stroke="#00ffff" stroke-width="1" opacity="0.6"/>
+    <ellipse cx="0" cy="0" rx="6" ry="12" fill="none" stroke="#00ffff" stroke-width="1" opacity="0.6"/>
+    <line x1="-12" y1="0" x2="12" y2="0" stroke="#00ffff" stroke-width="1" opacity="0.4"/>
+  </g>
+
+  <!-- File browser icon -->
+  <g transform="translate(150, 120)">
+    <rect x="-8" y="-6" width="16" height="12" rx="1" fill="none" stroke="#ffff00" stroke-width="1.5" opacity="0.8"/>
+    <rect x="-6" y="-4" width="3" height="2" fill="#ffff00" opacity="0.6"/>
+    <rect x="-2" y="-4" width="3" height="2" fill="#ffff00" opacity="0.4"/>
+    <rect x="2" y="-4" width="3" height="2" fill="#ffff00" opacity="0.6"/>
+    <rect x="-6" y="0" width="3" height="2" fill="#ffff00" opacity="0.4"/>
+    <rect x="-2" y="0" width="3" height="2" fill="#ffff00" opacity="0.6"/>
+    <rect x="2" y="0" width="3" height="2" fill="#ffff00" opacity="0.4"/>
+  </g>
+
+  <!-- Process tree visualization -->
+  <g transform="translate(50, 155)">
+    <!-- Tree branches -->
+    <line x1="0" y1="0" x2="20" y2="0" stroke="#66ff66" stroke-width="2" opacity="0.8"/>
+    <line x1="20" y1="0" x2="20" y2="10" stroke="#66ff66" stroke-width="1.5" opacity="0.6"/>
+    <line x1="20" y1="5" x2="30" y2="5" stroke="#66ff66" stroke-width="1.5" opacity="0.6"/>
+    <line x1="20" y1="10" x2="35" y2="10" stroke="#66ff66" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Process nodes -->
+    <circle cx="0" cy="0" r="3" fill="#00ff00" opacity="0.9"/>
+    <circle cx="30" cy="5" r="2" fill="#ffff00" opacity="0.7"/>
+    <circle cx="35" cy="10" r="2" fill="#ff8800" opacity="0.5"/>
+  </g>
+
+  <!-- Brand name -->
+  <text x="100" y="185" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#00ff00" filter="url(#glow)">WebTop</text>
+
+  <!-- Version indicator -->
+  <text x="100" y="195" text-anchor="middle" font-family="monospace" font-size="6" fill="#666">v2.0</text>
+
+  <!-- Animated pulse effect -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#00ff00" stroke-width="1" opacity="0.3">
+    <animate attributeName="r" values="95;98;95" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0.1;0.3" dur="3s" repeatCount="indefinite"/>
+  </circle>
+</svg>

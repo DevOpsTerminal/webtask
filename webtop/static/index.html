@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>webtop - Web System Monitor</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="header">
+        <div class="title">webtop - System Monitor</div>
+        <div class="system-info">
+            <div class="cpu-bar">
+                CPU: <div class="progress-bar"><div class="progress-fill" id="cpu-fill"></div></div>
+                <span id="cpu-percent">0%</span>
+            </div>
+            <div class="mem-bar">
+                MEM: <div class="progress-bar"><div class="progress-fill" id="mem-fill"></div></div>
+                <span id="mem-percent">0%</span>
+            </div>
+            <div>Load: <span id="load-avg">0.00</span></div>
+            <div>Uptime: <span id="uptime">0:00:00</span></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="control-item">
+            <span>F1</span> Help
+        </div>
+        <div class="control-item">
+            <span>F2</span> Files
+        </div>
+        <div class="control-item">
+            <span>F5</span> Tree
+        </div>
+        <div class="control-item">
+            <span>F6</span> Sort
+        </div>
+        <div class="control-item">
+            <span>F9</span> Kill
+        </div>
+        <div class="control-item">
+            <span>F10</span> Quit
+        </div>
+        <div class="control-item">
+            <input type="text" id="search-filter" placeholder="Filter processes..." class="filter-input">
+        </div>
+        <div class="control-item refresh-indicator">
+            ● Live
+        </div>
+    </div>
+
+    <div class="advanced-controls" id="advanced-controls">
+        <div class="control-group">
+            <label>Kill by PID:</label>
+            <input type="number" id="kill-pid" placeholder="Enter PID">
+        </div>
+        <div class="control-group">
+            <label>Kill by Service:</label>
+            <input type="text" id="kill-service" placeholder="Service name (e.g., nginx)">
+        </div>
+        <div class="control-group">
+            <label>Kill by Port:</label>
+            <input type="number" id="kill-port" placeholder="Port number">
+        </div>
+        <div class="control-group">
+            <label>Kill by User:</label>
+            <input type="text" id="kill-user" placeholder="Username">
+        </div>
+        <div class="control-group">
+            <label>Signal Type:</label>
+            <select id="signal-type">
+                <option value="TERM">SIGTERM (15) - Graceful</option>
+                <option value="KILL">SIGKILL (9) - Force</option>
+                <option value="INT">SIGINT (2) - Interrupt</option>
+                <option value="HUP">SIGHUP (1) - Hangup</option>
+                <option value="USR1">SIGUSR1 (10) - User 1</option>
+                <option value="USR2">SIGUSR2 (12) - User 2</option>
+            </select>
+        </div>
+        <div class="action-buttons">
+            <button class="action-btn warning" onclick="webTop.executeAdvancedKill()">Execute Kill</button>
+            <button class="action-btn" onclick="webTop.killAllFiltered()" style="background: #cc4444;">Kill All Filtered</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="process-header">
+            <div>PID</div>
+            <div>USER</div>
+            <div>CPU%</div>
+            <div>MEM%</div>
+            <div>TIME+</div>
+            <div>PORT</div>
+            <div>COMMAND</div>
+            <div>PREVIEW</div>
+            <div>ACTION</div>
+        </div>
+        <div id="process-list"></div>
+    </div>
+
+    <!-- File Browser Modal -->
+    <div class="modal" id="file-browser-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>File Browser - <span id="current-path">/</span></h3>
+                <button class="close-btn" onclick="webTop.closeFileBrowser()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="file-browser">
+                    <div class="breadcrumb" id="breadcrumb"></div>
+                    <div class="file-list" id="file-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Details Modal -->
+    <div class="modal" id="process-details-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Process Details - PID <span id="details-pid"></span></h3>
+                <button class="close-btn" onclick="webTop.closeProcessDetails()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="process-details" id="process-details-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Overlay -->
+    <div class="preview-overlay" id="preview-overlay">
+        <div class="preview-content">
+            <div class="preview-header">
+                <span id="preview-title">File Preview</span>
+                <button class="close-btn" onclick="webTop.closePreview()">&times;</button>
+            </div>
+            <div class="preview-body" id="preview-body"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Press F10 to quit | F1 for advanced controls | F2 for file browser | PID to kill: <span id="selected-pid">none</span> |
+        Processes: <span id="process-count">0</span> | Filtered: <span id="filtered-count">0</span> |
+        Last update: <span id="last-update">never</span>
+    </div>
+
+    <script src="webtop.js"></script>
+</body>
+</html>
