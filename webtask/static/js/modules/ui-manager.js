@@ -176,7 +176,6 @@ class UIManager {
         
         row.innerHTML = `
             <div class="process-card-header">
-                <div class="process-command-display">${commandWithIcon}</div>
                 <div class="process-actions">
                     <div class="action-buttons">
                         <button class="kill-button" data-pid="${process.pid}" title="Kill Process">
@@ -188,8 +187,11 @@ class UIManager {
                         <button class="restart-button" data-pid="${process.pid}" title="Restart Process">
                             <span class="restart-icon">↻</span>
                         </button>
-                        <button class="more-button" data-pid="${process.pid}" title="More Actions">
-                            <span class="more-icon">⋮</span>
+                        <button class="stop-button" data-pid="${process.pid}" title="Stop Process">
+                            <span class="stop-icon">⏹</span>
+                        </button>
+                        <button class="info-button" data-pid="${process.pid}" title="Process Info">
+                            <span class="info-icon">ℹ</span>
                         </button>
                     </div>
                 </div>
@@ -244,6 +246,7 @@ class UIManager {
     generateCommandWithIcon(process) {
         let iconHtml = '';
         const command = process.command || '';
+        const path = process.path || '';
         
         // Determine the type of icon based on the process service or command
         if (process.service === 'nginx') {
@@ -268,7 +271,13 @@ class UIManager {
             iconHtml = '<span class="command-icon process-icon">PROC</span>';
         }
         
-        return `<div class="command-with-icon">${iconHtml} <span class="command-text">${command}</span></div>`;
+        return `<div class="command-with-icon">
+            ${iconHtml} 
+            <div class="command-details">
+                <span class="command-text">${command}</span>
+                <span class="command-path">${path}</span>
+            </div>
+        </div>`;
     }
     
     /**

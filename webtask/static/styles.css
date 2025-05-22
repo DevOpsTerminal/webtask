@@ -248,6 +248,23 @@ border-color: #555;
     max-width: calc(100% - 80px);
 }
 
+.command-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.command-text {
+    font-weight: bold;
+    color: #00ffff;
+}
+
+.command-path {
+    font-size: 11px;
+    color: #aaaaaa;
+    opacity: 0.8;
+}
+
 .process-card-body {
     display: flex;
     flex-direction: column;

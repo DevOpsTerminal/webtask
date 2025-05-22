@@ -1,3 +1,5 @@
+![webtask-logo.svg](webtask-logo.svg)
+
 # webtask 🖥️
 
 webtask python package to start web top version in browser, [kill] like a pro!
@@ -5,7 +7,6 @@ webtask python package to start web top version in browser, [kill] like a pro!
 
 A modern, web-based system monitor inspired by htop with advanced file browsing, process transparency layers, and miniature file previews. Monitor your system processes through a sleek terminal-style web interface with real-time updates and comprehensive process management capabilities.
 
-![webtask-logo.svg](webtask-logo.svg)
 
 ## ✨ Features
 
@@ -53,6 +54,9 @@ A modern, web-based system monitor inspired by htop with advanced file browsing,
 
 ## 🚀 Quick Start
 
+
+![webtask-grid.png](webtask-grid.png)
+
 ### Installation
 
 ```bash
@@ -84,7 +88,6 @@ webtask --no-browser
 # Check version
 webtask --version
 ```
-
 ### Alternative Installation
 
 Using Poetry (for development):
@@ -260,12 +263,11 @@ Made with ❤️ for system administrators and developers who love comprehensive
 
 ### webtask-2
 
+
 #### List
 ![webtask-list.png](webtask-list.png)
 
 
-#### Grid
-![webtask-grid.png](webtask-grid.png)
 
 
 ### webtask-1
