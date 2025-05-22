@@ -191,33 +191,51 @@ class SystemMonitor {
      * @private
      */
     _simulateSystemData() {
-        // Generate a random CPU usage value
-        const cpuUsage = Math.random() * 100;
+        // Simulate memory usage
+        const memPercent = 30 + Math.random() * 40;
+        const memFill = document.getElementById('mem-fill');
+        const memText = document.getElementById('mem-percent');
         
-        // Update CPU cores
+        if (memFill) {
+            memFill.style.width = `${memPercent}%`;
+        }
+        
+        if (memText) {
+            memText.textContent = `${memPercent.toFixed(1)}%`;
+        }
+        
+        // Simulate load average
+        const loadAvg = (1 + Math.random() * 2).toFixed(2);
+        const loadAvgElement = document.getElementById('load-avg');
+        if (loadAvgElement) {
+            loadAvgElement.textContent = loadAvg;
+        }
+        
+        // Simulate CPU usage
+        const cpuUsage = 10 + Math.random() * 70;
+        
+        // Update CPU cores visualization
         this.updateCpuCores(cpuUsage);
         
         // Update CPU history
+        this.updateCpuHistory(cpuUsage);
+    }
+    
+    /**
+     * Update CPU history with latest usage data
+     * @param {number} cpuUsage - Current CPU usage percentage
+     */
+    updateCpuHistory(cpuUsage) {
+        // Add new value to history
         this.cpuHistory.push(cpuUsage);
+        
+        // Keep only the last 60 values (1 minute at 1 second intervals)
         if (this.cpuHistory.length > 60) {
             this.cpuHistory.shift();
         }
         
-        // Update CPU history chart
+        // Update the CPU history chart
         this.updateCpuHistoryChart(cpuUsage);
-    }
-    
-    /**
-     * Start periodic updates
-     */
-    startUpdating() {
-        // Perform initial updates
-        this._performDataUpdates();
-        
-        // Set interval for periodic updates
-        this.updateTimer = setInterval(() => {
-            this._performDataUpdates();
-        }, this.updateInterval);
     }
     
     /**

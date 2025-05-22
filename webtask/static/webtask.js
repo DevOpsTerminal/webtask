@@ -1,111 +1,446 @@
 class WebTask {
+    /**
+     * Initialize the WebTask application
+     */
     constructor() {
+        // Process management
         this.processes = [];
         this.filteredProcesses = [];
-        this.fileSystem = {};
-        this.currentPath = '/';
-        this.startTime = Date.now();
         this.selectedPid = null;
         this.processCounter = 1000;
         this.filterText = '';
-        this.cpuCores = 4; // Will be updated from API
-        this.cpuHistory = [];
-        this.cpuCoreValues = [];
         this.sortConfig = {
             column: 'cpu',
             direction: 'desc'
         };
+        
+        // File system
+        this.fileSystem = {};
+        this.currentPath = '/';
+        
+        // System monitoring
+        this.cpuCores = 4; // Will be updated from API
+        this.cpuHistory = [];
+        this.cpuCoreValues = [];
+        
+        // Application state
+        this.startTime = Date.now();
         this.updateInterval = 3000; // Update every 3 seconds
         
+        // Initialize application components
+        this._initializeComponents();
+    }
+    
+    /**
+     * Initialize all application components
+     * @private
+     */
+    _initializeComponents() {
+        // Initialize file system first
         this.initializeFileSystem();
+        
+        // Fetch initial data from API
         this.fetchInitialData();
+        
+        // Bind UI event handlers
         this.bindEvents();
     }
 
+    //==============================
+    // FILE SYSTEM MANAGEMENT
+    //==============================
+    
+    /**
+     * Initialize the virtual file system with a realistic directory structure
+     */
     initializeFileSystem() {
         this.fileSystem = {
             '/': {
                 type: 'directory',
+                children: this._createRootFileSystem()
+            }
+        };
+    }
+    
+    /**
+     * Create the root file system structure
+     * @private
+     * @returns {Object} Root file system structure
+     */
+    _createRootFileSystem() {
+        return {
+            'bin': { 
+                type: 'directory', 
+                children: this._createBinDirectory() 
+            },
+            'etc': { 
+                type: 'directory', 
+                children: this._createEtcDirectory() 
+            },
+            'var': { 
+                type: 'directory', 
+                children: this._createVarDirectory() 
+            },
+            'home': { 
+                type: 'directory', 
+                children: this._createHomeDirectory() 
+            }
+        };
+    }
+    
+    /**
+     * Create the /bin directory structure
+     * @private
+     * @returns {Object} Bin directory structure
+     */
+    _createBinDirectory() {
+        return {
+            'bash': { 
+                type: 'executable', 
+                size: 1234567, 
+                content: '#!/bin/bash\n# Bash shell executable\n# System shell program' 
+            },
+            'node': { 
+                type: 'executable', 
+                size: 45678901, 
+                content: '#!/usr/bin/env node\n// Node.js runtime executable' 
+            },
+            'python3': { 
+                type: 'executable', 
+                size: 23456789, 
+                content: '#!/usr/bin/python3\n# Python 3 interpreter' 
+            }
+        };
+    }
+    
+    /**
+     * Create the /etc directory structure
+     * @private
+     * @returns {Object} Etc directory structure
+     */
+    _createEtcDirectory() {
+        return {
+            'nginx': { 
+                type: 'directory', 
                 children: {
-                    'bin': { type: 'directory', children: {
-                        'bash': { type: 'executable', size: 1234567, content: '#!/bin/bash\n# Bash shell executable\n# System shell program' },
-                        'node': { type: 'executable', size: 45678901, content: '#!/usr/bin/env node\n// Node.js runtime executable' },
-                        'python3': { type: 'executable', size: 23456789, content: '#!/usr/bin/python3\n# Python 3 interpreter' }
-                    }},
-                    'etc': { type: 'directory', children: {
-                        'nginx': { type: 'directory', children: {
-                            'nginx.conf': { type: 'config', size: 2048, content: 'server {\n    listen 80;\n    server_name localhost;\n    location / {\n        root /var/www/html;\n    }\n}' }
-                        }},
-                        'systemd': { type: 'directory', children: {
-                            'system': { type: 'directory', children: {
-                                'nginx.service': { type: 'service', size: 512, content: '[Unit]\nDescription=The nginx HTTP and reverse proxy server\n[Service]\nType=forking\nExecStart=/usr/sbin/nginx\n[Install]\nWantedBy=multi-user.target' }
-                            }}
-                        }}
-                    }},
-                    'var': { type: 'directory', children: {
-                        'www': { type: 'directory', children: {
-                            'html': { type: 'directory', children: {
-                                'index.html': { type: 'html', size: 1024, content: '<!DOCTYPE html>\n<html>\n<head>\n    <title>Welcome to nginx!</title>\n    <style>\n        body { font-family: Arial; background: #f0f0f0; }\n        .container { max-width: 800px; margin: 50px auto; padding: 20px; }\n        h1 { color: #333; text-align: center; }\n    </style>\n</head>\n<body>\n    <div class="container">\n        <h1>Welcome to nginx!</h1>\n        <p>If you can see this page, the nginx web server is successfully installed and working.</p>\n    </div>\n</body>\n</html>' },
-                                'app.js': { type: 'script', size: 856, content: 'const express = require(\'express\');\nconst app = express();\nconst port = 3000;\n\napp.get(\'/\', (req, res) => {\n    res.send(\'Hello World from Node.js!\');\n});\n\napp.listen(port, () => {\n    console.log(`Server running at http://localhost:${port}`);\n});' }
-                            }}
-                        }},
-                        'log': { type: 'directory', children: {
-                            'nginx': { type: 'directory', children: {
-                                'access.log': { type: 'log', size: 45678, content: '192.168.1.100 - - [22/May/2025:10:30:45 +0000] "GET / HTTP/1.1" 200 612\n192.168.1.101 - - [22/May/2025:10:31:12 +0000] "GET /app.js HTTP/1.1" 404 162' }
-                            }}
-                        }}
-                    }},
-                    'usr': { type: 'directory', children: {
-                        'local': { type: 'directory', children: {
-                            'bin': { type: 'directory', children: {
-                                'myapp': { type: 'script', size: 1234, content: '#!/bin/bash\n# Custom application launcher\nexport NODE_ENV=production\ncd /var/www/html\nnode app.js' }
-                            }}
-                        }}
-                    }}
+                    'nginx.conf': { 
+                        type: 'config', 
+                        size: 2048, 
+                        content: 'server {\n    listen 80;\n    server_name localhost;\n    location / {\n        root /var/www/html;\n    }\n}' 
+                    }
+                }
+            },
+            'systemd': { 
+                type: 'directory', 
+                children: {
+                    'system': { 
+                        type: 'directory', 
+                        children: {
+                            'nginx.service': { 
+                                type: 'service', 
+                                size: 512, 
+                                content: '[Unit]\nDescription=The nginx HTTP and reverse proxy server\n[Service]\nType=forking\nExecStart=/usr/sbin/nginx\n[Install]\nWantedBy=multi-user.target' 
+                            }
+                        }
+                    }
                 }
             }
         };
     }
+    
+    /**
+     * Create the /var directory structure
+     * @private
+     * @returns {Object} Var directory structure
+     */
+    _createVarDirectory() {
+        return {
+            'www': { 
+                type: 'directory', 
+                children: {
+                    'html': { 
+                        type: 'directory', 
+                        children: {
+                            'index.html': { 
+                                type: 'html', 
+                                size: 1024, 
+                                content: '<!DOCTYPE html>\n<html>\n<head>\n    <title>Welcome to nginx!</title>\n    <style>\n        body { font-family: Arial; background: #f0f0f0; }\n        .container { max-width: 800px; margin: 50px auto; padding: 20px; }\n        h1 { color: #333; text-align: center; }\n    </style>\n</head>\n<body>\n    <div class="container">\n        <h1>Welcome to nginx!</h1>\n        <p>If you can see this page, the nginx web server is successfully installed and working.</p>\n    </div>\n</body>\n</html>' 
+                            },
+                            'app.js': { 
+                                type: 'script', 
+                                size: 856, 
+                                content: 'const express = require(\'express\');\nconst app = express();\nconst port = 3000;\n\napp.get(\'/\', (req, res) => {\n    res.send(\'Hello World from Node.js!\');\n});\n\napp.listen(port, () => {\n    console.log(`Server running at http://localhost:${port}`);\n});' 
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+    
+    /**
+     * Create the /home directory structure
+     * @private
+     * @returns {Object} Home directory structure
+     */
+    _createHomeDirectory() {
+        return {
+            'user': { 
+                type: 'directory', 
+                children: {
+                    'documents': { 
+                        type: 'directory', 
+                        children: {
+                            'notes.txt': { 
+                                type: 'text', 
+                                size: 256, 
+                                content: 'Important system notes:\n1. Remember to update the server weekly\n2. Check logs for any suspicious activity\n3. Backup the database nightly' 
+                            }
+                        }
+                    },
+                    'projects': { 
+                        type: 'directory', 
+                        children: {
+                            'webapp': { 
+                                type: 'directory', 
+                                children: {
+                                    'index.js': { 
+                                        type: 'script', 
+                                        size: 1024, 
+                                        content: 'const http = require(\'http\');\n\nconst server = http.createServer((req, res) => {\n    res.statusCode = 200;\n    res.setHeader(\'Content-Type\', \'text/plain\');\n    res.end(\'Hello World\\n\');\n});\n\nserver.listen(8080, \'localhost\', () => {\n    console.log(\'Server running at http://localhost:8080/\');\n});' 
+                                    },
+                                    'package.json': { 
+                                        type: 'json', 
+                                        size: 512, 
+                                        content: '{\n  "name": "webapp",\n  "version": "1.0.0",\n  "description": "A simple web application",\n  "main": "index.js",\n  "scripts": {\n    "start": "node index.js"\n  },\n  "dependencies": {\n    "express": "^4.17.1"\n  }\n}' 
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+    
+    /**
+     * Get file content from the virtual file system
+     * @param {string} path - Path to the file
+     * @returns {string|null} File content or null if not found
+     */
+    getFileContent(path) {
+        const file = this._getItemAtPath(path);
+        if (!file || file.type === 'directory') {
+            return null;
+        }
+        return file.content;
+    }
+    
+    /**
+     * Get item (file or directory) at the specified path
+     * @private
+     * @param {string} path - Path to the item
+     * @returns {Object|null} Item or null if not found
+     */
+    _getItemAtPath(path) {
+        if (path === '/') {
+            return this.fileSystem['/'];
+        }
+        
+        const parts = path.split('/').filter(Boolean);
+        let current = this.fileSystem['/'];
+        
+        for (const part of parts) {
+            if (!current.children || !current.children[part]) {
+                return null;
+            }
+            current = current.children[part];
+        }
+        
+        return current;
+    }
 
-    // Fetch initial data from API
+    //==============================
+    // API INTEGRATION & DATA FETCHING
+    //==============================
+    
+    /**
+     * Fetch initial data from API to set up the application
+     */
     fetchInitialData() {
-        // Fetch system info from API
-        fetch('/api/system')
-            .then(response => response.json())
+        this._fetchSystemInfo()
             .then(data => {
-                // Update CPU cores count from API
-                this.cpuCores = data.cpu.cores || 4;
+                if (!data) {
+                    this._initializeWithDefaultValues();
+                    return;
+                }
                 
-                // Initialize CPU core values
-                this.cpuCoreValues = Array(this.cpuCores).fill(0);
+                // Initialize with real data from API
+                this._initializeWithSystemData(data);
                 
-                // Initialize CPU history with zeros
-                this.cpuHistory = Array(60).fill(0);
-                
-                // Initialize CPU visualization
-                this.initializeCpuVisualization();
-                
-                // Start updating data
+                // Start periodic updates
                 this.startUpdating();
             })
             .catch(error => {
+                console.error('Error in initial data fetch:', error);
+                this._initializeWithDefaultValues();
+            });
+    }
+    
+    /**
+     * Initialize system with default values (fallback)
+     * @private
+     */
+    _initializeWithDefaultValues() {
+        console.log('Initializing with default values');
+        this.cpuCores = 4;
+        this.cpuCoreValues = Array(this.cpuCores).fill(0);
+        this.cpuHistory = Array(60).fill(0);
+        this.initializeCpuVisualization();
+        this.startUpdating();
+    }
+    
+    /**
+     * Initialize system with data from API
+     * @private
+     * @param {Object} data - System data from API
+     */
+    _initializeWithSystemData(data) {
+        console.log('Initializing with system data:', data);
+        // Update CPU cores count from API
+        this.cpuCores = data.cpu.cores || 4;
+        
+        // Initialize CPU core values
+        this.cpuCoreValues = Array(this.cpuCores).fill(0);
+        
+        // Initialize CPU history with zeros
+        this.cpuHistory = Array(60).fill(0);
+        
+        // Initialize CPU visualization
+        this.initializeCpuVisualization();
+    }
+    
+    /**
+     * Fetch system information from API
+     * @private
+     * @returns {Promise} Promise that resolves with system data
+     */
+    _fetchSystemInfo() {
+        return fetch('/api/system')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('System info fetched:', data);
+                return data;
+            })
+            .catch(error => {
                 console.error('Error fetching system info:', error);
-                // Fallback to default values
-                this.cpuCores = 4;
-                this.cpuCoreValues = Array(this.cpuCores).fill(0);
-                this.cpuHistory = Array(60).fill(0);
-                this.initializeCpuVisualization();
-                this.startUpdating();
+                return null;
             });
     }
 
-    // Start periodic updates
+    //==============================
+    // PERIODIC UPDATES & SCHEDULING
+    //==============================
+    
+    /**
+     * Start periodic updates of system and process data
+     */
     startUpdating() {
-        // Set interval to update data periodically
-        this.updateInterval = setInterval(() => {
-            this.fetchSystemInfo();
-            this.fetchProcesses();
-        }, 3000); // Update every 3 seconds
+        // Perform initial updates
+        this._performDataUpdates();
+        
+        // Set interval for periodic updates
+        this.updateTimer = setInterval(() => {
+            this._performDataUpdates();
+        }, this.updateInterval);
+        
+        console.log(`Started periodic updates every ${this.updateInterval}ms`);
+    }
+    
+    /**
+     * Perform all data updates (system info and processes)
+     * @private
+     */
+    _performDataUpdates() {
+        // Update timestamp
+        this._updateTimestamp();
+        
+        // Fetch system information
+        this._fetchSystemInfo()
+            .then(data => {
+                if (data) {
+                    this._updateSystemDisplay(data);
+                } else {
+                    this._simulateSystemData();
+                }
+            })
+            .catch(() => {
+                this._simulateSystemData();
+            });
+        
+        // Update processes
+        this.updateProcesses();
+    }
+    
+    /**
+     * Update the last update timestamp
+     * @private
+     */
+    _updateTimestamp() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        const lastUpdateElement = document.getElementById('last-update');
+        if (lastUpdateElement) {
+            lastUpdateElement.textContent = timeString;
+        }
+    }
+    
+    /**
+     * Update system display with real data
+     * @private
+     * @param {Object} data - System data from API
+     */
+    _updateSystemDisplay(data) {
+        // Update CPU usage
+        const cpuUsage = data.cpu.percent || 0;
+        
+        // Update CPU cores visualization
+        this.updateCpuCores(cpuUsage);
+        
+        // Update CPU history
+        this.cpuHistory.push(cpuUsage);
+        if (this.cpuHistory.length > 60) {
+            this.cpuHistory.shift();
+        }
+        
+        // Update CPU history chart
+        this.updateCpuHistoryChart(cpuUsage);
+    }
+    
+    /**
+     * Simulate system data when API is unavailable
+     * @private
+     */
+    _simulateSystemData() {
+        // Generate a random CPU usage value
+        const cpuUsage = Math.random() * 100;
+        
+        // Update CPU cores
+        this.updateCpuCores(cpuUsage);
+        
+        // Update CPU history
+        this.cpuHistory.push(cpuUsage);
+        if (this.cpuHistory.length > 60) {
+            this.cpuHistory.shift();
+        }
+        
+        // Update CPU history chart
+        this.updateCpuHistoryChart(cpuUsage);
     }
 
     
@@ -614,131 +949,322 @@ class WebTask {
         this.updateCpuHistoryChart(cpuUsage);
     }
 
-    // Update processes with real data from API
+    //==============================
+    // PROCESS MANAGEMENT
+    //==============================
+    
+    /**
+     * Update processes with real data from API
+     */
     updateProcesses() {
-        // Fetch processes from API
-        fetch('/api/processes')
-            .then(response => response.json())
+        this._fetchProcesses()
             .then(data => {
-                // Transform API data to match our expected format
-                this.processes = data.map(proc => {
-                    return {
-                        pid: proc.pid,
-                        user: proc.user || 'system',
-                        cpu: proc.cpu || 0,
-                        memory: proc.memory || 0,
-                        time: this.generateTime(),
-                        port: null, // API doesn't provide port info
-                        command: proc.name || 'unknown',
-                        file: null,
-                        service: proc.name ? proc.name.split(' ')[0] : 'unknown',
-                        parent: null,
-                        children: [],
-                        transparency: this.calculateTransparency(proc.name ? proc.name.split(' ')[0] : 'unknown'),
-                        startTime: Date.now() - (Math.random() * 3600000) // Random start time within the last hour
-                    };
-                });
-
-                // Build process hierarchy
-                this.buildProcessHierarchy();
+                if (!data || data.length === 0) {
+                    this._simulateProcesses();
+                    return;
+                }
                 
-                // Sort processes according to current sort configuration
-                this.sortProcesses();
-                
-                // Apply current filter
-                this.applyFilter();
-                
-                // Render the process list
-                this.renderProcesses();
+                // Transform and update process data
+                this._updateProcessData(data);
             })
             .catch(error => {
-                console.error('Error fetching processes:', error);
-                // Fallback to simulated data if API fails
-                this.simulateProcesses();
+                console.error('Error in process update:', error);
+                this._simulateProcesses();
             });
     }
     
-    // Simulate processes (fallback if API fails)
-    simulateProcesses() {
-        // Simulate process changes
+    /**
+     * Fetch processes from API
+     * @private
+     * @returns {Promise} Promise that resolves with process data
+     */
+    _fetchProcesses() {
+        return fetch('/api/processes')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Processes fetched:', data.length);
+                return data;
+            })
+            .catch(error => {
+                console.error('Error fetching processes:', error);
+                return null;
+            });
+    }
+    
+    /**
+     * Update process data with API results
+     * @private
+     * @param {Array} data - Process data from API
+     */
+    _updateProcessData(data) {
+        // Transform API data to match our expected format
+        this.processes = data.map(proc => this._transformProcessData(proc));
+
+        // Process the data
+        this._processAndRenderData();
+    }
+    
+    /**
+     * Transform raw process data to application format
+     * @private
+     * @param {Object} proc - Raw process data
+     * @returns {Object} Transformed process object
+     */
+    _transformProcessData(proc) {
+        return {
+            pid: proc.pid,
+            user: proc.user || 'system',
+            cpu: proc.cpu || 0,
+            memory: proc.memory || 0,
+            time: this.generateTime(),
+            port: null, // API doesn't provide port info
+            command: proc.name || 'unknown',
+            file: null,
+            service: proc.name ? proc.name.split(' ')[0] : 'unknown',
+            parent: null,
+            children: [],
+            transparency: this.calculateTransparency(proc.name ? proc.name.split(' ')[0] : 'unknown'),
+            startTime: Date.now() - (Math.random() * 3600000) // Random start time within the last hour
+        };
+    }
+    
+    /**
+     * Process and render the current data
+     * @private
+     */
+    _processAndRenderData() {
+        // Build process hierarchy
+        this.buildProcessHierarchy();
+        
+        // Sort processes according to current sort configuration
+        this.sortProcesses();
+        
+        // Apply current filter
+        this.applyFilter();
+        
+        // Render the process list
+        this.renderProcesses();
+        
+        // Update process count
+        this._updateProcessCount();
+    }
+    
+    /**
+     * Update the process count display
+     * @private
+     */
+    _updateProcessCount() {
+        const processCountElement = document.getElementById('process-count');
+        const filteredCountElement = document.getElementById('filtered-count');
+        
+        if (processCountElement) {
+            processCountElement.textContent = this.processes.length;
+        }
+        
+        if (filteredCountElement) {
+            filteredCountElement.textContent = this.filteredProcesses.length;
+        }
+    }
+    
+    /**
+     * Simulate processes (fallback if API fails)
+     * @private
+     */
+    _simulateProcesses() {
+        console.log('Using simulated process data');
+        
+        // Create initial processes if none exist
+        if (this.processes.length === 0) {
+            this._createInitialSimulatedProcesses();
+        } else {
+            this._updateSimulatedProcesses();
+        }
+
+        // Process and render the data
+        this._processAndRenderData();
+    }
+    
+    /**
+     * Create initial simulated processes
+     * @private
+     */
+    _createInitialSimulatedProcesses() {
+        const baseProcesses = [
+            { command: 'systemd', user: 'root', cpu: 0.5, memory: 1.2 },
+            { command: 'nginx', user: 'www-data', cpu: 1.5, memory: 3.2 },
+            { command: 'node app.js', user: 'nodejs', cpu: 5.2, memory: 8.7 },
+            { command: 'python3 server.py', user: 'python', cpu: 3.7, memory: 6.5 },
+            { command: 'java -jar app.jar', user: 'java', cpu: 4.1, memory: 12.3 },
+            { command: 'mysql', user: 'mysql', cpu: 2.8, memory: 15.6 }
+        ];
+        
+        this.processes = baseProcesses.map((proc, index) => ({
+            pid: this.processCounter++,
+            user: proc.user,
+            cpu: proc.cpu,
+            memory: proc.memory,
+            time: this.generateTime(),
+            port: index % 2 === 0 ? 8000 + index * 100 : null,
+            command: proc.command,
+            file: proc.command.includes('node') ? '/var/www/html/app.js' : null,
+            service: proc.command.split(' ')[0],
+            parent: null,
+            children: [],
+            transparency: this.calculateTransparency(proc.command.split(' ')[0]),
+            startTime: Date.now() - (Math.random() * 3600000)
+        }));
+    }
+    
+    /**
+     * Update existing simulated processes
+     * @private
+     */
+    _updateSimulatedProcesses() {
+        // Update existing processes
         this.processes.forEach(process => {
+            // Random CPU fluctuation
             process.cpu += (Math.random() - 0.5) * 2;
             process.cpu = Math.max(0, Math.min(100, process.cpu));
 
+            // Random memory fluctuation
             process.memory += (Math.random() - 0.5) * 1;
             process.memory = Math.max(0, Math.min(100, process.memory));
         });
 
-        // Occasionally add new processes
+        // Occasionally add new processes (10% chance if under 50 processes)
         if (Math.random() < 0.1 && this.processes.length < 50) {
-            const commands = ['node app.js', 'python3 server.py', 'java -jar app.jar', 'go run main.go'];
-            const command = commands[Math.floor(Math.random() * commands.length)];
-            const port = Math.random() < 0.3 ? Math.floor(Math.random() * 9000) + 1000 : null;
-
-            this.processes.push({
-                pid: this.processCounter++,
-                user: 'user',
-                cpu: Math.random() * 5,
-                memory: Math.random() * 10,
-                time: this.generateTime(),
-                port: port,
-                command: command,
-                file: command.includes('node') ? '/var/www/html/app.js' : null,
-                service: command.split(' ')[0],
-                parent: null,
-                children: [],
-                transparency: 0.9,
-                startTime: Date.now()
-            });
+            this._addRandomProcess();
         }
-
-        // Sort and apply filter
-        this.sortProcesses();
-        this.applyFilter();
-        this.renderProcesses();
     }
     
-    // Sort processes according to current sort configuration
+    /**
+     * Add a random process to the simulation
+     * @private
+     */
+    _addRandomProcess() {
+        const commands = ['node app.js', 'python3 server.py', 'java -jar app.jar', 'go run main.go'];
+        const users = ['user', 'www-data', 'nodejs', 'python', 'java', 'root'];
+        
+        const command = commands[Math.floor(Math.random() * commands.length)];
+        const user = users[Math.floor(Math.random() * users.length)];
+        const port = Math.random() < 0.3 ? Math.floor(Math.random() * 9000) + 1000 : null;
+
+        this.processes.push({
+            pid: this.processCounter++,
+            user: user,
+            cpu: Math.random() * 5,
+            memory: Math.random() * 10,
+            time: this.generateTime(),
+            port: port,
+            command: command,
+            file: command.includes('node') ? '/var/www/html/app.js' : null,
+            service: command.split(' ')[0],
+            parent: null,
+            children: [],
+            transparency: this.calculateTransparency(command.split(' ')[0]),
+            startTime: Date.now()
+        });
+    }
+    
+    /**
+     * Sort processes according to current sort configuration
+     */
     sortProcesses() {
         const { column, direction } = this.sortConfig;
         const multiplier = direction === 'asc' ? 1 : -1;
         
         this.processes.sort((a, b) => {
-            switch (column) {
-                case 'pid':
-                    return (a.pid - b.pid) * multiplier;
-                case 'user':
-                    return a.user.localeCompare(b.user) * multiplier;
-                case 'cpu':
-                    return (a.cpu - b.cpu) * multiplier;
-                case 'mem':
-                    return (a.memory - b.memory) * multiplier;
-                case 'time':
-                    // Convert time strings to seconds for comparison
-                    const aTime = this.timeToSeconds(a.time);
-                    const bTime = this.timeToSeconds(b.time);
-                    return (aTime - bTime) * multiplier;
-                case 'port':
-                    // Handle null ports
-                    if (!a.port && !b.port) return 0;
-                    if (!a.port) return 1 * multiplier;
-                    if (!b.port) return -1 * multiplier;
-                    return (a.port - b.port) * multiplier;
-                case 'command':
-                    return a.command.localeCompare(b.command) * multiplier;
-                default:
-                    return (a.cpu - b.cpu) * multiplier; // Default to CPU sorting
-            }
+            return this._compareProcesses(a, b, column, multiplier);
         });
     }
     
-    // Convert time string (HH:MM:SS) to seconds for sorting
+    /**
+     * Compare two processes for sorting
+     * @private
+     * @param {Object} a - First process
+     * @param {Object} b - Second process
+     * @param {string} column - Column to sort by
+     * @param {number} multiplier - Sort direction multiplier (1 for asc, -1 for desc)
+     * @returns {number} Comparison result
+     */
+    _compareProcesses(a, b, column, multiplier) {
+        switch (column) {
+            case 'pid':
+                return (a.pid - b.pid) * multiplier;
+            case 'user':
+                return a.user.localeCompare(b.user) * multiplier;
+            case 'cpu':
+                return (a.cpu - b.cpu) * multiplier;
+            case 'mem':
+                return (a.memory - b.memory) * multiplier;
+            case 'time':
+                // Convert time strings to seconds for comparison
+                const aTime = this.timeToSeconds(a.time);
+                const bTime = this.timeToSeconds(b.time);
+                return (aTime - bTime) * multiplier;
+            case 'port':
+                // Handle null ports
+                if (!a.port && !b.port) return 0;
+                if (!a.port) return 1 * multiplier;
+                if (!b.port) return -1 * multiplier;
+                return (a.port - b.port) * multiplier;
+            case 'command':
+                return a.command.localeCompare(b.command) * multiplier;
+            default:
+                return (a.cpu - b.cpu) * multiplier; // Default to CPU sorting
+        }
+    }
+    
+    /**
+     * Convert time string (HH:MM:SS) to seconds for sorting
+     * @param {string} timeString - Time string in HH:MM:SS format
+     * @returns {number} Total seconds
+     */
     timeToSeconds(timeString) {
         if (!timeString) return 0;
         const [hours, minutes, seconds] = timeString.split(':').map(Number);
         return hours * 3600 + minutes * 60 + seconds;
     }
+    
+    /**
+     * Apply filter to processes based on filterText
+     */
+    applyFilter() {
+        if (!this.filterText) {
+            this.filteredProcesses = [...this.processes];
+            return;
+        }
+        
+        const filter = this.filterText.toLowerCase();
+        this.filteredProcesses = this.processes.filter(process => this._processMatchesFilter(process, filter));
+    }
+    
+    /**
+     * Check if a process matches the filter
+     * @private
+     * @param {Object} process - Process to check
+     * @param {string} filter - Filter text (lowercase)
+     * @returns {boolean} True if process matches filter
+     */
+    _processMatchesFilter(process, filter) {
+        return (
+            process.pid.toString().includes(filter) ||
+            process.user.toLowerCase().includes(filter) ||
+            process.command.toLowerCase().includes(filter) ||
+            (process.port && process.port.toString().includes(filter))
+        );
+    }
 
+    /**
+     * Generate a preview thumbnail for a process
+     * @param {Object} process - Process object
+     * @returns {string} HTML for the thumbnail
+     */
     generatePreviewThumbnail(process) {
         let thumbnailContent = '';
         let thumbnailClass = 'preview-thumbnail';
@@ -898,7 +1424,7 @@ class WebTask {
 
         // Calculate additional information
         const uptime = this.formatTime(process.time);
-        const memoryUsage = (process.mem * 100).toFixed(2) + '%';
+        const memoryUsage = (process.memory * 100).toFixed(2) + '%';
         const cpuUsage = (process.cpu * 100).toFixed(2) + '%';
         const status = process.transparency < 0.8 ? 'Background Process' : 'Active Process';
         const startTime = new Date(Date.now() - process.time * 1000).toLocaleString();
