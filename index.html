@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>webtop - Web System Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .header {
+            background: #2a2a2a;
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ffff;
+        }
+
+        .system-info {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+        }
+
+        .cpu-bar, .mem-bar {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .progress-bar {
+            width: 100px;
+            height: 10px;
+            background: #333;
+            border: 1px solid #666;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #ffff00, #ff0000);
+            transition: width 0.5s ease;
+        }
+
+        .controls {
+            padding: 10px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #444;
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .main-content {
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .process-header {
+            background: #333;
+            padding: 8px;
+            border-bottom: 1px solid #555;
+            display: grid;
+            grid-template-columns: 60px 80px 80px 60px 60px 1fr 80px;
+            gap: 10px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .process-row {
+            padding: 4px 8px;
+            border-bottom: 1px solid #333;
+            display: grid;
+            grid-template-columns: 60px 80px 80px 60px 60px 1fr 80px;
+            gap: 10px;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .process-row:hover {
+            background: #2a2a2a;
+        }
+
+        .process-row.high-cpu {
+            color: #ff6666;
+        }
+
+        .process-row.high-mem {
+            color: #ffff66;
+        }
+
+        .kill-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 10px;
+            transition: background 0.2s;
+        }
+
+        .kill-btn:hover {
+            background: #ff6666;
+        }
+
+        .kill-btn:active {
+            background: #cc2222;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #2a2a2a;
+            padding: 5px 10px;
+            border-top: 1px solid #444;
+            font-size: 10px;
+            color: #888;
+        }
+
+        .refresh-indicator {
+            color: #00ffff;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0.5; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">webtop - System Monitor</div>
+        <div class="system-info">
+            <div class="cpu-bar">
+                CPU: <div class="progress-bar"><div class="progress-fill" id="cpu-fill"></div></div>
+                <span id="cpu-percent">0%</span>
+            </div>
+            <div class="mem-bar">
+                MEM: <div class="progress-bar"><div class="progress-fill" id="mem-fill"></div></div>
+                <span id="mem-percent">0%</span>
+            </div>
+            <div>Load: <span id="load-avg">0.00</span></div>
+            <div>Uptime: <span id="uptime">0:00:00</span></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="control-item">
+            <span>F1</span> Help
+        </div>
+        <div class="control-item">
+            <span>F5</span> Tree
+        </div>
+        <div class="control-item">
+            <span>F6</span> Sort
+        </div>
+        <div class="control-item">
+            <span>F9</span> Kill
+        </div>
+        <div class="control-item">
+            <span>F10</span> Quit
+        </div>
+        <div class="control-item refresh-indicator">
+            ● Live
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="process-header">
+            <div>PID</div>
+            <div>USER</div>
+            <div>CPU%</div>
+            <div>MEM%</div>
+            <div>TIME+</div>
+            <div>COMMAND</div>
+            <div>ACTION</div>
+        </div>
+        <div id="process-list"></div>
+    </div>
+
+    <div class="footer">
+        Press F10 to quit | PID to kill: <span id="selected-pid">none</span> | Processes: <span id="process-count">0</span> | 
+        Last update: <span id="last-update">never</span>
+    </div>
+
+    <script>
+        class WebTop {
+            constructor() {
+                this.processes = [];
+                this.startTime = Date.now();
+                this.selectedPid = null;
+                this.processCounter = 1000;
+                
+                this.initializeProcesses();
+                this.startUpdating();
+                this.bindEvents();
+            }
+
+            initializeProcesses() {
+                const commands = [
+                    'systemd', 'kernel', 'kthreadd', 'rcu_gp', 'rcu_par_gp', 'migration/0',
+                    'ksoftirqd/0', 'watchdog/0', 'sshd', 'networkd', 'resolved',
+                    'chrome', 'firefox', 'code', 'node', 'python3', 'nginx', 'apache2',
+                    'mysql', 'postgres', 'redis', 'docker', 'containerd', 'kubelet',
+                    'bash', 'zsh', 'vim', 'git', 'npm', 'yarn', 'webpack', 'typescript'
+                ];
+
+                const users = ['root', 'daemon', 'user', 'www-data', 'mysql', 'postgres'];
+
+                for (let i = 0; i < 30; i++) {
+                    this.processes.push({
+                        pid: this.processCounter++,
+                        user: users[Math.floor(Math.random() * users.length)],
+                        cpu: Math.random() * 15,
+                        memory: Math.random() * 25,
+                        time: this.generateTime(),
+                        command: commands[Math.floor(Math.random() * commands.length)] + this.generateArgs(),
+                        startTime: Date.now() - Math.random() * 3600000
+                    });
+                }
+
+                // Sort by CPU usage initially
+                this.processes.sort((a, b) => b.cpu - a.cpu);
+            }
+
+            generateArgs() {
+                const args = ['--daemon', '--config', '--verbose', '--quiet', '--help', 
+                             '--port=8080', '--host=localhost', '--ssl', '--debug'];
+                const numArgs = Math.floor(Math.random() * 3);
+                let result = '';
+                for (let i = 0; i < numArgs; i++) {
+                    result += ' ' + args[Math.floor(Math.random() * args.length)];
+                }
+                return result;
+            }
+
+            generateTime() {
+                const seconds = Math.floor(Math.random() * 3600);
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            updateSystemStats() {
+                const cpuUsage = Math.random() * 100;
+                const memUsage = Math.random() * 100;
+                const loadAvg = (Math.random() * 4).toFixed(2);
+
+                document.getElementById('cpu-fill').style.width = cpuUsage + '%';
+                document.getElementById('cpu-percent').textContent = cpuUsage.toFixed(1) + '%';
+                
+                document.getElementById('mem-fill').style.width = memUsage + '%';
+                document.getElementById('mem-percent').textContent = memUsage.toFixed(1) + '%';
+                
+                document.getElementById('load-avg').textContent = loadAvg;
+
+                // Update uptime
+                const uptime = Date.now() - this.startTime;
+                const hours = Math.floor(uptime / 3600000);
+                const minutes = Math.floor((uptime % 3600000) / 60000);
+                const seconds = Math.floor((uptime % 60000) / 1000);
+                document.getElementById('uptime').textContent = 
+                    `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            updateProcesses() {
+                // Simulate process changes
+                this.processes.forEach(process => {
+                    process.cpu += (Math.random() - 0.5) * 2;
+                    process.cpu = Math.max(0, Math.min(100, process.cpu));
+                    
+                    process.memory += (Math.random() - 0.5) * 1;
+                    process.memory = Math.max(0, Math.min(100, process.memory));
+                });
+
+                // Occasionally add new processes
+                if (Math.random() < 0.1 && this.processes.length < 50) {
+                    const commands = ['node', 'python3', 'java', 'go', 'rust', 'gcc'];
+                    this.processes.push({
+                        pid: this.processCounter++,
+                        user: 'user',
+                        cpu: Math.random() * 5,
+                        memory: Math.random() * 10,
+                        time: this.generateTime(),
+                        command: commands[Math.floor(Math.random() * commands.length)] + ' app.js',
+                        startTime: Date.now()
+                    });
+                }
+
+                // Sort by CPU usage
+                this.processes.sort((a, b) => b.cpu - a.cpu);
+            }
+
+            renderProcesses() {
+                const processList = document.getElementById('process-list');
+                processList.innerHTML = '';
+
+                this.processes.forEach(process => {
+                    const row = document.createElement('div');
+                    row.className = 'process-row';
+                    
+                    if (process.cpu > 10) row.classList.add('high-cpu');
+                    if (process.memory > 20) row.classList.add('high-mem');
+
+                    row.innerHTML = `
+                        <div>${process.pid}</div>
+                        <div>${process.user}</div>
+                        <div>${process.cpu.toFixed(1)}</div>
+                        <div>${process.memory.toFixed(1)}</div>
+                        <div>${process.time}</div>
+                        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${process.command}">
+                            ${process.command}
+                        </div>
+                        <div>
+                            <button class="kill-btn" onclick="webTop.killProcess(${process.pid})">
+                                KILL
+                            </button>
+                        </div>
+                    `;
+
+                    row.addEventListener('click', () => {
+                        this.selectedPid = process.pid;
+                        document.getElementById('selected-pid').textContent = process.pid;
+                        
+                        // Remove previous selection
+                        document.querySelectorAll('.process-row').forEach(r => 
+                            r.style.background = '');
+                        row.style.background = '#444';
+                    });
+
+                    processList.appendChild(row);
+                });
+
+                document.getElementById('process-count').textContent = this.processes.length;
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            }
+
+            killProcess(pid) {
+                const index = this.processes.findIndex(p => p.pid === pid);
+                if (index !== -1) {
+                    this.processes.splice(index, 1);
+                    if (this.selectedPid === pid) {
+                        this.selectedPid = null;
+                        document.getElementById('selected-pid').textContent = 'none';
+                    }
+                    this.renderProcesses();
+                }
+            }
+
+            startUpdating() {
+                setInterval(() => {
+                    this.updateSystemStats();
+                    this.updateProcesses();
+                    this.renderProcesses();
+                }, 2000);
+
+                // Initial render
+                this.updateSystemStats();
+                this.renderProcesses();
+            }
+
+            bindEvents() {
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'F9':
+                            if (this.selectedPid) {
+                                this.killProcess(this.selectedPid);
+                            }
+                            break;
+                        case 'F10':
+                            if (confirm('Really quit webtop?')) {
+                                window.close();
+                            }
+                            break;
+                        case 'q':
+                            if (confirm('Really quit webtop?')) {
+                                window.close();
+                            }
+                            break;
+                    }
+                });
+            }
+        }
+
+        // Initialize webtop
+        const webTop = new WebTop();
+    </script>
+</body>
+</html>
