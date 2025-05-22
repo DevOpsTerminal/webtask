@@ -45,12 +45,34 @@ class UIManager {
             });
         });
         
-        // Kill process button
+        // Process action buttons
         document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('kill-button')) {
-                const pid = parseInt(e.target.dataset.pid);
+            // Handle kill button
+            if (e.target.classList.contains('kill-button') || e.target.closest('.kill-button')) {
+                const button = e.target.classList.contains('kill-button') ? e.target : e.target.closest('.kill-button');
+                const pid = parseInt(button.dataset.pid);
+                this.processManager.killProcess(pid, 'TERM');
+            } 
+            // Handle more button
+            else if (e.target.classList.contains('more-button') || e.target.closest('.more-button')) {
+                const button = e.target.classList.contains('more-button') ? e.target : e.target.closest('.more-button');
+                const pid = parseInt(button.dataset.pid);
                 this.toggleKillOptions(pid);
-            } else if (e.target.classList.contains('kill-option')) {
+            }
+            // Handle pause button
+            else if (e.target.classList.contains('pause-button') || e.target.closest('.pause-button')) {
+                const button = e.target.classList.contains('pause-button') ? e.target : e.target.closest('.pause-button');
+                const pid = parseInt(button.dataset.pid);
+                this.processManager.killProcess(pid, 'STOP');
+            }
+            // Handle restart button
+            else if (e.target.classList.contains('restart-button') || e.target.closest('.restart-button')) {
+                const button = e.target.classList.contains('restart-button') ? e.target : e.target.closest('.restart-button');
+                const pid = parseInt(button.dataset.pid);
+                this.processManager.killProcess(pid, 'HUP');
+            }
+            // Handle kill options
+            else if (e.target.classList.contains('kill-option')) {
                 const pid = parseInt(e.target.dataset.pid);
                 const signal = e.target.dataset.signal;
                 if (pid && signal) {
@@ -143,44 +165,72 @@ class UIManager {
         const row = document.createElement('div');
         row.className = 'process-row';
         row.dataset.pid = process.pid;
+        row.dataset.parent = process.ppid || 0;
+        row.dataset.level = process.level || 0;
         
-        // Add hierarchy indicator
-        let hierarchyIndicator = '';
-        if (process.parentPid) {
-            const depth = this.processManager.getProcessDepth(process);
-            const hierarchyClass = depth === 1 ? 'child' : 'grandchild';
-            hierarchyIndicator = `<div class="process-hierarchy ${hierarchyClass}"></div>`;
-        }
-        
+        // Generate the preview thumbnail
         const thumbnail = this.generatePreviewThumbnail(process);
+        
+        // Generate command with icon
+        const commandWithIcon = this.generateCommandWithIcon(process);
+        
+        // Create hierarchy indicator
+        let hierarchyIndicator = '';
+        if (process.level > 0) {
+            const indent = process.level * 20;
+            hierarchyIndicator = `<div class="hierarchy-indicator" style="width: ${indent}px"></div>`;
+        }
         
         row.innerHTML = `
             ${hierarchyIndicator}
-            <div class="sortable" data-sort="pid">${process.pid}</div>
-            <div class="sortable" data-sort="user">${process.user}</div>
+            <div class="sortable process-info" data-sort="pid">
+                <div class="info-item"><span class="info-label">PID:</span> ${process.pid}</div>
+                <div class="info-item"><span class="info-label">USER:</span> ${process.user}</div>
+                <div class="info-item"><span class="info-label">TIME:</span> ${process.time}</div>
+            </div>
             <div class="sortable" data-sort="cpu">${process.cpu.toFixed(1)}</div>
             <div class="sortable" data-sort="mem">${process.memory.toFixed(1)}</div>
-            <div class="sortable" data-sort="time">${process.time}</div>
             <div class="sortable" data-sort="port">${process.port || '-'}</div>
             <div class="sortable process-command" data-sort="command">
+                ${commandWithIcon}
+            </div>
+            <div class="process-preview">
                 ${thumbnail}
             </div>
             <div class="process-actions">
-                <button class="kill-button" data-pid="${process.pid}">
-                    <span class="kill-icon">×</span>
-                </button>
+                <div class="action-buttons">
+                    <button class="kill-button" data-pid="${process.pid}" title="Kill Process">
+                        <span class="kill-icon">×</span>
+                    </button>
+                    <button class="pause-button" data-pid="${process.pid}" title="Pause Process">
+                        <span class="pause-icon">⏸</span>
+                    </button>
+                    <button class="restart-button" data-pid="${process.pid}" title="Restart Process">
+                        <span class="restart-icon">⟳</span>
+                    </button>
+                    <button class="more-button" data-pid="${process.pid}" title="More Actions">
+                        <span class="more-icon">⋮</span>
+                    </button>
+                </div>
                 <div class="kill-dropdown" id="dropdown-${process.pid}">
+                    <div class="kill-dropdown-header">Process Actions - PID ${process.pid}</div>
                     <div class="kill-option" data-pid="${process.pid}" data-signal="TERM">
-                        SIGTERM (Terminate)
+                        <span class="signal-icon">✓</span> SIGTERM (Terminate)
                     </div>
                     <div class="kill-option" data-pid="${process.pid}" data-signal="KILL">
-                        SIGKILL (Kill)
+                        <span class="signal-icon">⚡</span> SIGKILL (Force Kill)
                     </div>
                     <div class="kill-option" data-pid="${process.pid}" data-signal="INT">
-                        SIGINT (Interrupt)
+                        <span class="signal-icon">⏹</span> SIGINT (Interrupt)
                     </div>
                     <div class="kill-option" data-pid="${process.pid}" data-signal="HUP">
-                        SIGHUP (Hangup)
+                        <span class="signal-icon">🔄</span> SIGHUP (Restart)
+                    </div>
+                    <div class="kill-option" data-pid="${process.pid}" data-signal="STOP">
+                        <span class="signal-icon">⏸</span> SIGSTOP (Pause)
+                    </div>
+                    <div class="kill-option" data-pid="${process.pid}" data-signal="CONT">
+                        <span class="signal-icon">▶️</span> SIGCONT (Resume)
                     </div>
                 </div>
             </div>
@@ -234,6 +284,9 @@ class UIManager {
         let thumbnailContent = '';
         let thumbnailClass = 'preview-thumbnail';
         
+        // Generate command icon for use in thumbnails
+        const commandIcon = this.generateCommandWithIcon(process);
+        
         // Determine the type of preview based on the process
         if (process.file) {
             // Get file content from fileSystemManager if available, otherwise use local method
@@ -243,170 +296,163 @@ class UIManager {
             
             if (fileContent) {
                 if (process.file.endsWith('.html')) {
-                    thumbnailClass += ' html-preview';
-                    thumbnailContent = `<iframe srcdoc="${this.escapeHTML(fileContent)}"></iframe>`;
-                } else if (process.file.endsWith('.js')) {
-                    thumbnailClass += ' code-preview js-preview';
                     thumbnailContent = `
-                        <div class="code-preview-header"><span class="file-icon js-icon">JS</span> ${process.file.split('/').pop()}</div>
-                        <pre class="code-snippet">${this.escapeHTML(fileContent.substring(0, 100))}...</pre>
+                        <div class="html-preview">
+                            <div class="text-preview-header">
+                                <span>${commandIcon}</span>
+                                <span class="file-icon" style="background: #e34c26; color: white;">HTML</span>
+                                <span>${process.file.split('/').pop()}</span>
+                            </div>
+                            <iframe srcdoc="${this.escapeHTML(fileContent)}"></iframe>
+                        </div>
+                    `;
+                } else if (process.file.endsWith('.js')) {
+                    thumbnailContent = `
+                        <div class="code-preview">
+                            <div class="code-preview-header">
+                                <span>${commandIcon}</span>
+                                <span class="file-icon" style="background: #f7df1e; color: #000;">JS</span>
+                                <span>${process.file.split('/').pop()}</span>
+                            </div>
+                            <pre class="code-snippet">${this.escapeHTML(fileContent.substring(0, 100))}${fileContent.length > 100 ? '...' : ''}</pre>
+                        </div>
                     `;
                 } else if (process.file.endsWith('.css')) {
-                    thumbnailClass += ' code-preview css-preview';
                     thumbnailContent = `
-                        <div class="code-preview-header"><span class="file-icon css-icon">CSS</span> ${process.file.split('/').pop()}</div>
-                        <pre class="code-snippet">${this.escapeHTML(fileContent.substring(0, 100))}...</pre>
+                        <div class="code-preview">
+                            <div class="code-preview-header">
+                                <span>${commandIcon}</span>
+                                <span class="file-icon" style="background: #264de4; color: white;">CSS</span>
+                                <span>${process.file.split('/').pop()}</span>
+                            </div>
+                            <pre class="code-snippet">${this.escapeHTML(fileContent.substring(0, 100))}${fileContent.length > 100 ? '...' : ''}</pre>
+                        </div>
                     `;
                 } else if (process.file.endsWith('.json')) {
-                    thumbnailClass += ' code-preview json-preview';
                     thumbnailContent = `
-                        <div class="code-preview-header"><span class="file-icon json-icon">JSON</span> ${process.file.split('/').pop()}</div>
-                        <pre class="code-snippet">${this.escapeHTML(fileContent.substring(0, 100))}...</pre>
+                        <div class="code-preview">
+                            <div class="code-preview-header">
+                                <span>${commandIcon}</span>
+                                <span class="file-icon" style="background: #000; color: white;">JSON</span>
+                                <span>${process.file.split('/').pop()}</span>
+                            </div>
+                            <pre class="code-snippet">${this.escapeHTML(fileContent.substring(0, 100))}${fileContent.length > 100 ? '...' : ''}</pre>
+                        </div>
                     `;
                 } else if (process.file.endsWith('.sh') || process.file.endsWith('.bash')) {
-                    thumbnailClass += ' code-preview bash-preview';
                     thumbnailContent = `
-                        <div class="code-preview-header"><span class="file-icon bash-icon">BASH</span> ${process.file.split('/').pop()}</div>
-                        <pre class="code-snippet">${this.escapeHTML(fileContent.substring(0, 100))}...</pre>
-                    `;
-                } else if (process.file.endsWith('.txt') || process.file.endsWith('.md')) {
-                    thumbnailClass += ' text-preview';
-                    thumbnailContent = `
-                        <div class="text-preview-header"><span class="file-icon text-icon">TXT</span> ${process.file.split('/').pop()}</div>
-                        <div class="text-content">${this.escapeHTML(fileContent.substring(0, 150))}...</div>
-                    `;
-                } else if (process.file.endsWith('.pdf')) {
-                    thumbnailClass += ' pdf-preview';
-                    thumbnailContent = `
-                        <div class="pdf-icon">PDF</div>
-                        <div class="file-name">${process.file.split('/').pop()}</div>
+                        <div class="code-preview">
+                            <div class="code-preview-header">
+                                <span>${commandIcon}</span>
+                                <span class="file-icon" style="background: #4EAA25; color: white;">BASH</span>
+                                <span>${process.file.split('/').pop()}</span>
+                            </div>
+                            <pre class="code-snippet">${this.escapeHTML(fileContent.substring(0, 100))}${fileContent.length > 100 ? '...' : ''}</pre>
+                        </div>
                     `;
                 } else if (/\.(jpg|jpeg|png|gif|svg)$/i.test(process.file)) {
-                    thumbnailClass += ' image-preview';
                     thumbnailContent = `
-                        <div class="image-icon">IMG</div>
-                        <div class="file-name">${process.file.split('/').pop()}</div>
+                        <div class="text-preview">
+                            <div class="text-preview-header">
+                                <span>${commandIcon}</span>
+                                <span class="file-icon" style="background: #f06; color: white;">IMG</span>
+                                <span>${process.file.split('/').pop()}</span>
+                            </div>
+                            <div class="text-content">Image file</div>
+                        </div>
+                    `;
+                } else if (process.file.endsWith('.pdf')) {
+                    thumbnailContent = `
+                        <div class="text-preview">
+                            <div class="text-preview-header">
+                                <span>${commandIcon}</span>
+                                <span class="file-icon" style="background: #f40f02; color: white;">PDF</span>
+                                <span>${process.file.split('/').pop()}</span>
+                            </div>
+                            <div class="text-content">PDF Document</div>
+                        </div>
+                    `;
+                } else if (process.file.endsWith('.txt') || process.file.endsWith('.md') || process.file.endsWith('.log')) {
+                    thumbnailContent = `
+                        <div class="text-preview">
+                            <div class="text-preview-header">
+                                <span>${commandIcon}</span>
+                                <span class="file-icon" style="background: #eee; color: #333;">TXT</span>
+                                <span>${process.file.split('/').pop()}</span>
+                            </div>
+                            <div class="text-content">${this.escapeHTML(fileContent.substring(0, 200))}${fileContent.length > 200 ? '...' : ''}</div>
+                        </div>
                     `;
                 }
             }
-        } else if (process.port) {
-            // Process with a port - likely a web service
-            if (process.service === 'nginx' || process.service === 'apache' || process.command.includes('http')) {
-                thumbnailClass += ' web-service-preview';
-                thumbnailContent = `
+        }
+        // Check if this is a web service
+        else if (process.command && (process.command.includes('nginx') || process.command.includes('apache') || process.command.includes('http'))) {
+            thumbnailContent = `
+                <div class="web-service-preview">
                     <div class="web-service-header">
-                        <span class="service-icon ${process.service}-icon">${process.service.toUpperCase()}</span>
-                        <span class="port-badge">:${process.port}</span>
+                        <span>${commandIcon}</span>
+                        ${process.port ? `<span class="port-badge">:${process.port}</span>` : ''}
                     </div>
-                    <div class="web-service-content">
-                        <div class="browser-mockup">
-                            <div class="browser-bar"></div>
-                            <div class="browser-content"></div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                thumbnailClass += ' port-preview';
-                thumbnailContent = `
-                    <div class="port-header">
-                        <span class="service-icon">${process.service ? process.service.toUpperCase() : 'SVC'}</span>
-                        <span class="port-badge">PORT ${process.port}</span>
-                    </div>
-                    <div class="port-details">
-                        <div class="port-status active"></div>
-                        <div class="port-info">Listening</div>
-                    </div>
-                `;
-            }
-        } else if (process.service === 'nginx') {
-            thumbnailClass += ' service-preview';
-            thumbnailContent = `
-                <div class="service-header nginx-header">
-                    <div class="service-icon nginx-icon">NGINX</div>
-                </div>
-                <div class="service-content">
-                    <div class="service-status">Running</div>
-                    <div class="service-metrics">
-                        <div class="metric">CPU: ${(process.cpu * 100).toFixed(1)}%</div>
-                        <div class="metric">MEM: ${(process.memory * 100).toFixed(1)}%</div>
-                    </div>
-                </div>
-            `;
-        } else if (process.service === 'node') {
-            thumbnailClass += ' service-preview';
-            thumbnailContent = `
-                <div class="service-header node-header">
-                    <div class="service-icon node-icon">NODE</div>
-                </div>
-                <div class="service-content">
-                    <div class="service-status">Running</div>
-                    <div class="service-metrics">
-                        <div class="metric">CPU: ${(process.cpu * 100).toFixed(1)}%</div>
-                        <div class="metric">MEM: ${(process.memory * 100).toFixed(1)}%</div>
-                    </div>
-                </div>
-            `;
-        } else if (process.service === 'python') {
-            thumbnailClass += ' service-preview';
-            thumbnailContent = `
-                <div class="service-header python-header">
-                    <div class="service-icon python-icon">PY</div>
-                </div>
-                <div class="service-content">
-                    <div class="service-status">Running</div>
-                    <div class="service-metrics">
-                        <div class="metric">CPU: ${(process.cpu * 100).toFixed(1)}%</div>
-                        <div class="metric">MEM: ${(process.memory * 100).toFixed(1)}%</div>
-                    </div>
-                </div>
-            `;
-        } else if (process.service === 'java') {
-            thumbnailClass += ' service-preview';
-            thumbnailContent = `
-                <div class="service-header java-header">
-                    <div class="service-icon java-icon">JAVA</div>
-                </div>
-                <div class="service-content">
-                    <div class="service-status">Running</div>
-                    <div class="service-metrics">
-                        <div class="metric">CPU: ${(process.cpu * 100).toFixed(1)}%</div>
-                        <div class="metric">MEM: ${(process.memory * 100).toFixed(1)}%</div>
-                    </div>
-                </div>
-            `;
-        } else if (process.service === 'mysql') {
-            thumbnailClass += ' service-preview';
-            thumbnailContent = `
-                <div class="service-header mysql-header">
-                    <div class="service-icon mysql-icon">SQL</div>
-                </div>
-                <div class="service-content">
-                    <div class="service-status">Running</div>
-                    <div class="service-metrics">
-                        <div class="metric">CPU: ${(process.cpu * 100).toFixed(1)}%</div>
-                        <div class="metric">MEM: ${(process.memory * 100).toFixed(1)}%</div>
-                    </div>
-                </div>
-            `;
-        } else {
-            // Generic process preview
-            thumbnailClass += ' generic-preview';
-            thumbnailContent = `
-                <div class="process-header">
-                    <div class="process-icon">PROC</div>
-                    <div class="process-pid">PID: ${process.pid}</div>
-                </div>
-                <div class="process-content">
-                    <div class="process-command">${process.command.substring(0, 20)}${process.command.length > 20 ? '...' : ''}</div>
-                    <div class="process-metrics">
-                        <div class="metric">CPU: ${(process.cpu * 100).toFixed(1)}%</div>
-                        <div class="metric">MEM: ${(process.memory * 100).toFixed(1)}%</div>
+                    <div class="browser-mockup">
+                        <div class="browser-bar"></div>
+                        <div class="browser-content"></div>
                     </div>
                 </div>
             `;
         }
-        
-        // Create the thumbnail element
+        // Check if this is a database service
+        else if (process.command && (process.command.includes('mysql') || process.command.includes('postgres') || process.command.includes('mongo'))) {
+            thumbnailContent = `
+                <div class="service-preview">
+                    <div class="service-header">
+                        <span>${commandIcon}</span>
+                    </div>
+                    <div class="service-content">
+                        <div class="service-status">Running</div>
+                        <div class="service-metrics">
+                            <div class="metric">CPU: ${process.cpu.toFixed(1)}%</div>
+                            <div class="metric">MEM: ${process.memory.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        // Check if this is a port listener
+        else if (process.port) {
+            thumbnailContent = `
+                <div class="port-preview">
+                    <div class="port-header">
+                        <span>${commandIcon}</span>
+                        <span class="port-badge">:${process.port}</span>
+                    </div>
+                    <div class="port-details">
+                        <div class="port-status active"></div>
+                        <div class="port-info">TCP ${process.port}</div>
+                    </div>
+                </div>
+            `;
+        }
+        // Generic process
+        else if (process.command) {
+            thumbnailContent = `
+                <div class="generic-preview">
+                    <div class="process-header">
+                        <span>${commandIcon}</span>
+                        <span class="process-pid">${process.pid}</span>
+                    </div>
+                    <div class="process-content">
+                        <div class="process-command">${this.escapeHTML(process.command)}</div>
+                        <div class="process-metrics">
+                            <div class="metric">CPU: ${process.cpu.toFixed(1)}%</div>
+                            <div class="metric">MEM: ${process.memory.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Wrap the content in a div with the appropriate class
         if (thumbnailContent) {
             return `<div class="${thumbnailClass}" data-pid="${process.pid}">${thumbnailContent}</div>`;
         }
@@ -544,7 +590,9 @@ class UIManager {
             
             // Add a click outside listener to close the dropdown
             const closeListener = (e) => {
-                if (!e.target.closest('.kill-dropdown') && !e.target.closest('.kill-button')) {
+                if (!e.target.closest('.kill-dropdown') && 
+                    !e.target.closest('.kill-button') && 
+                    !e.target.closest('.more-button')) {
                     dropdown.classList.remove('show');
                     document.removeEventListener('click', closeListener);
                 }
