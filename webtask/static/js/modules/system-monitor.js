@@ -253,7 +253,7 @@ class SystemMonitor {
             const coreElement = document.createElement('div');
             coreElement.className = 'cpu-core';
             coreElement.innerHTML = `
-                <div class="core-label">Core ${i + 1}</div>
+<!--                <div class="core-label">${i + 1}</div>-->
                 <div class="core-bar">
                     <div class="core-fill" id="core-fill-${i}" style="width: 0%"></div>
                 </div>
@@ -317,8 +317,9 @@ class SystemMonitor {
             
             if (fillElement && valueElement) {
                 fillElement.style.width = `${coreLoad}%`;
-                valueElement.textContent = `${coreLoad.toFixed(1)}%`;
-                
+                valueElement.textContent = `${coreLoad.toFixed(0)}%`;
+                // valueElement.textContent = `${coreLoad.toFixed(1)}%`;
+
                 // Update color based on load
                 if (coreLoad < 50) {
                     fillElement.style.backgroundColor = '#00ffff';

@@ -201,32 +201,32 @@ body {
 
 #process-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
     padding: 15px;
     width: 100%;
     box-sizing: border-box;
 }
 
 .process-row {
-    background: #2a2a2a;
-    border-radius: 8px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s, box-shadow 0.2s;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid #444;
+background: #1e1e1e;
+border-radius: 8px;
+padding: 15px;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+position: relative;
+overflow: hidden;
+border: 1px solid #333;
+display: flex;
+flex-direction: column;
+gap: 15px;
 }
 
 .process-row:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    background: #333;
-    border-color: #555;
+transform: translateY(-3px);
+box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+background: #333;
+border-color: #555;
 }
 
 /* Process Card Components */
@@ -407,6 +407,59 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid #444;
+}
+
+.preview-title {
+    font-weight: bold;
+    color: #00ffff;
+    font-size: 14px;
+}
+
+.preview-content {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    overflow: hidden;
+}
+
+.command-display {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.code-content {
+    font-family: monospace;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 4px;
+    overflow: auto;
+    max-height: 60px;
+    white-space: pre-wrap;
+    color: #ddd;
+}
+
+.text-content {
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 4px;
+    overflow: auto;
+    max-height: 60px;
+    white-space: pre-wrap;
+    color: #ddd;
 }
 
 .preview-thumbnail {

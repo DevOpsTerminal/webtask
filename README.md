@@ -257,3 +257,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Made with ❤️ for system administrators and developers who love comprehensive, visual tools.
 
 **Version 2.0.0** - Now with file browsing and transparency layers!
+
+### webtask-2
+
+#### List
+![webtask-list.png](webtask-list.png)
+
+
+#### Grid
+![webtask-grid.png](webtask-grid.png)
+
+
+### webtask-1
+![webtask-1.png](webtask-1.png)
