@@ -32,7 +32,7 @@ def main() -> None:
     parser.add_argument(
         "--version",
         action="version",
-        version="webtask 2.0.1"
+        version="webtask 2.0.4"
     )
     args = parser.parse_args()
     try:

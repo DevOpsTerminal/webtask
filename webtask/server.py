@@ -6,7 +6,7 @@ import webbrowser
 import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 class WebTaskHandler(SimpleHTTPRequestHandler):
@@ -39,7 +39,7 @@ class webtaskServer:
         self.host = host
         self.port = port
         self.open_browser = open_browser
-        self.server = None
+        self.server: Optional[HTTPServer] = None
 
     def run(self) -> None:
         try:
@@ -49,7 +49,8 @@ class webtaskServer:
             print("📊 webtask is running! Press Ctrl+C to stop.")
             if self.open_browser:
                 threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-            self.server.serve_forever()
+            if self.server is not None:  # Check for None to satisfy type checker
+                self.server.serve_forever()
         except OSError as e:
             if hasattr(e, 'errno') and e.errno in (48, 98):
                 print(
