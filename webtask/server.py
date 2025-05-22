@@ -6,10 +6,7 @@ import webbrowser
 import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-from typing import Any, Tuple, Optional, Type, TypeVar
-
-
-_RequestHandlerT = TypeVar('_RequestHandlerT', bound=SimpleHTTPRequestHandler)
+from typing import Any
 
 
 class WebTaskHandler(SimpleHTTPRequestHandler):
@@ -33,7 +30,12 @@ class WebTaskHandler(SimpleHTTPRequestHandler):
 
 class webtaskServer:
     """webtask server wrapper"""
-    def __init__(self, host: str = "localhost", port: int = 8000, open_browser: bool = True) -> None:
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: int = 8000,
+        open_browser: bool = True
+    ) -> None:
         self.host = host
         self.port = port
         self.open_browser = open_browser
