@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "webtask"
-version = "2.0.5"
+version = "2.0.6"
 description = "A modern, web-based system monitor inspired by htop with file browser and process transparency"
 authors = ["Tom Sapletta <info@softreck.dev>"]
 readme = "README.md"
@@ -29,15 +29,16 @@ classifiers = [
 packages = [{include = "webtask"}]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8.1"
 psutil = "^5.9.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
 black = "^22.0"
-flake8 = "^4.0"
+flake8 = "6.1.0"
 mypy = "^0.910"
 pytest-cov = "^4.0"
+importlib-metadata = "6.8.0"
 
 [tool.poetry.scripts]
 webtask = "webtask.main:main"
