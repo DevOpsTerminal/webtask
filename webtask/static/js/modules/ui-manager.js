@@ -15,7 +15,7 @@ class UIManager {
      */
     bindEvents() {
         // Process filter input
-        const filterInput = document.getElementById('process-filter');
+        const filterInput = document.getElementById('search-filter');
         if (filterInput) {
             filterInput.addEventListener('input', (e) => {
                 this.processManager.setFilterText(e.target.value);
@@ -182,6 +182,12 @@ class UIManager {
                         <button class="kill-button" data-pid="${process.pid}" title="Kill Process">
                             <span class="kill-icon">×</span>
                         </button>
+                        <button class="pause-button" data-pid="${process.pid}" title="Pause Process">
+                            <span class="pause-icon">⏸</span>
+                        </button>
+                        <button class="restart-button" data-pid="${process.pid}" title="Restart Process">
+                            <span class="restart-icon">↻</span>
+                        </button>
                         <button class="more-button" data-pid="${process.pid}" title="More Actions">
                             <span class="more-icon">⋮</span>
                         </button>
@@ -320,9 +326,9 @@ class UIManager {
                     if (fileType === 'html') {
                         return `
                             <div class="html-preview">
-                                <div class="preview-header">
-                                    <span class="preview-title">HTML Preview</span>
-                                </div>
+<!--                                <div class="preview-header">-->
+<!--                                    <span class="preview-title">HTML Preview</span>-->
+<!--                                </div>-->
                                 <iframe srcdoc="${fileContent.replace(/"/g, '&quot;')}" style="width:100%; height:70%; transform: scale(0.2); transform-origin: 0 0; border: none;"></iframe>
                                 ${metricsHTML}
                             </div>
@@ -345,9 +351,9 @@ class UIManager {
                     // For other text files
                     return `
                         <div class="text-preview">
-                            <div class="preview-header">
-                                <span class="preview-title">Text File</span>
-                            </div>
+<!--                            <div class="preview-header">-->
+<!--                                <span class="preview-title">Text File</span>-->
+<!--                            </div>-->
                             <div class="text-content">${fileContent.substring(0, 100)}${fileContent.length > 100 ? '...' : ''}</div>
                             ${metricsHTML}
                         </div>
@@ -364,9 +370,9 @@ class UIManager {
         // Default generic preview
         return `
             <div class="generic-preview">
-                <div class="preview-header">
-                    <span class="preview-title"></span>
-                </div>
+<!--                <div class="preview-header">-->
+<!--                    <span class="preview-title"></span>-->
+<!--                </div>-->
                 <div class="preview-content">
                     <div class="command-display">${commandIcon}</div>
                     ${metricsHTML}
