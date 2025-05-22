@@ -69,25 +69,36 @@ class WebTask {
 
     // Fetch initial data from API
     fetchInitialData() {
-        // Fetch system info first to get CPU cores count
-        this.fetchSystemInfo()
-            .then(() => {
-                // Initialize CPU cores display with the correct number of cores
-                this.initializeCpuCoresDisplay();
+        // Fetch system info from API
+        fetch('/api/system')
+            .then(response => response.json())
+            .then(data => {
+                // Update CPU cores count from API
+                this.cpuCores = data.cpu.cores || 4;
                 
-                // Start fetching processes
-                this.fetchProcesses();
+                // Initialize CPU core values
+                this.cpuCoreValues = Array(this.cpuCores).fill(0);
                 
-                // Start the update interval
+                // Initialize CPU history with zeros
+                this.cpuHistory = Array(60).fill(0);
+                
+                // Initialize CPU visualization
+                this.initializeCpuVisualization();
+                
+                // Start updating data
                 this.startUpdating();
             })
             .catch(error => {
-                console.error('Error fetching initial data:', error);
-                // Fallback to simulated data if API fails
-                this.simulateData();
+                console.error('Error fetching system info:', error);
+                // Fallback to default values
+                this.cpuCores = 4;
+                this.cpuCoreValues = Array(this.cpuCores).fill(0);
+                this.cpuHistory = Array(60).fill(0);
+                this.initializeCpuVisualization();
+                this.startUpdating();
             });
     }
-    
+
     // Start periodic updates
     startUpdating() {
         // Set interval to update data periodically
@@ -96,6 +107,7 @@ class WebTask {
             this.fetchProcesses();
         }, 3000); // Update every 3 seconds
     }
+
     
     // Fetch system information from API
     fetchSystemInfo() {
@@ -602,6 +614,90 @@ class WebTask {
         this.updateCpuHistoryChart(cpuUsage);
     }
 
+    // Update processes with real data from API
+    updateProcesses() {
+        // Fetch processes from API
+        fetch('/api/processes')
+            .then(response => response.json())
+            .then(data => {
+                // Transform API data to match our expected format
+                this.processes = data.map(proc => {
+                    return {
+                        pid: proc.pid,
+                        user: proc.user || 'system',
+                        cpu: proc.cpu || 0,
+                        memory: proc.memory || 0,
+                        time: this.generateTime(),
+                        port: null, // API doesn't provide port info
+                        command: proc.name || 'unknown',
+                        file: null,
+                        service: proc.name ? proc.name.split(' ')[0] : 'unknown',
+                        parent: null,
+                        children: [],
+                        transparency: this.calculateTransparency(proc.name ? proc.name.split(' ')[0] : 'unknown'),
+                        startTime: Date.now() - (Math.random() * 3600000) // Random start time within the last hour
+                    };
+                });
+
+                // Build process hierarchy
+                this.buildProcessHierarchy();
+                
+                // Sort processes according to current sort configuration
+                this.sortProcesses();
+                
+                // Apply current filter
+                this.applyFilter();
+                
+                // Render the process list
+                this.renderProcesses();
+            })
+            .catch(error => {
+                console.error('Error fetching processes:', error);
+                // Fallback to simulated data if API fails
+                this.simulateProcesses();
+            });
+    }
+    
+    // Simulate processes (fallback if API fails)
+    simulateProcesses() {
+        // Simulate process changes
+        this.processes.forEach(process => {
+            process.cpu += (Math.random() - 0.5) * 2;
+            process.cpu = Math.max(0, Math.min(100, process.cpu));
+
+            process.memory += (Math.random() - 0.5) * 1;
+            process.memory = Math.max(0, Math.min(100, process.memory));
+        });
+
+        // Occasionally add new processes
+        if (Math.random() < 0.1 && this.processes.length < 50) {
+            const commands = ['node app.js', 'python3 server.py', 'java -jar app.jar', 'go run main.go'];
+            const command = commands[Math.floor(Math.random() * commands.length)];
+            const port = Math.random() < 0.3 ? Math.floor(Math.random() * 9000) + 1000 : null;
+
+            this.processes.push({
+                pid: this.processCounter++,
+                user: 'user',
+                cpu: Math.random() * 5,
+                memory: Math.random() * 10,
+                time: this.generateTime(),
+                port: port,
+                command: command,
+                file: command.includes('node') ? '/var/www/html/app.js' : null,
+                service: command.split(' ')[0],
+                parent: null,
+                children: [],
+                transparency: 0.9,
+                startTime: Date.now()
+            });
+        }
+
+        // Sort and apply filter
+        this.sortProcesses();
+        this.applyFilter();
+        this.renderProcesses();
+    }
+    
     // Sort processes according to current sort configuration
     sortProcesses() {
         const { column, direction } = this.sortConfig;
