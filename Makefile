@@ -95,14 +95,20 @@ publish-full:
 
 # Start the WebTask server
 start:
-	@echo "Starting WebTask server on $(HOST):$(PORT)..."
+	@echo "Starting WebTask server on $(HOST):$(PORT) in foreground..."
 	@poetry run webtask --host $(HOST) --port $(PORT)
 
 # Stop the WebTask server
 stop:
 	@echo "Stopping WebTask server on port $(PORT)..."
-	@-pkill -f "python.*webtask.*--host $(HOST).*--port $(PORT)" || echo "No WebTask server found running on port $(PORT)"
-	@-pkill -f "webtask.*--host $(HOST).*--port $(PORT)" || true
+	@-PID=$$(lsof -t -i:$(PORT) -sTCP:LISTEN); \
+	if [ -n "$$PID" ]; then \
+	    echo "Killing process $$PID on port $(PORT)"; \
+	    kill -9 $$PID || echo "Failed to kill process $$PID. It might have already stopped."; \
+	    sleep 1; \
+	else \
+	    echo "No WebTask server found running on port $(PORT)"; \
+	fi
 
 # Restart the WebTask server
 restart: stop start
