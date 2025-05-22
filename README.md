@@ -2,7 +2,7 @@
 
 # webtask 🖥️
 
-webtask python package to start web top version in browser, [kill] like a pro!
+[webtask](https://pypi.org/project/webtask/) package to start web top version in browser, [kill] like a pro!
 
 
 A modern, web-based system monitor inspired by htop with advanced file browsing, process transparency layers, and miniature file previews. Monitor your system processes through a sleek terminal-style web interface with real-time updates and comprehensive process management capabilities.
