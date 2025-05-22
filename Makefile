@@ -101,7 +101,8 @@ start:
 # Stop the WebTask server
 stop:
 	@echo "Stopping WebTask server on port $(PORT)..."
-	@-pkill -f "webtask --host $(HOST) --port $(PORT)" || echo "No WebTask server found running on port $(PORT)"
+	@-pkill -f "python.*webtask.*--host $(HOST).*--port $(PORT)" || echo "No WebTask server found running on port $(PORT)"
+	@-pkill -f "webtask.*--host $(HOST).*--port $(PORT)" || true
 
 # Restart the WebTask server
 restart: stop start
