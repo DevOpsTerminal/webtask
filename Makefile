@@ -37,9 +37,13 @@ test: test-unit test-integration
 	@echo "All tests completed."
 
 # Run unit tests
+# test-unit: venv
+# 	@echo "Running unit tests..."
+# 	@$(VENV_ACTIVATE) && pytest tests/unit/ -v
+
 test-unit: venv
 	@echo "Running unit tests..."
-	@$(VENV_ACTIVATE) && pytest tests/unit/ -v
+	@$(VENV_ACTIVATE) && pytest tests/ -v
 
 # Run integration tests
 test-integration: venv
@@ -54,14 +58,14 @@ test-ansible: venv
 # Run linting checks
 lint: venv
 	@echo "Running linting checks..."
-	@$(VENV_ACTIVATE) && flake8 loglama/
-	@$(VENV_ACTIVATE) && mypy loglama/
+	@$(VENV_ACTIVATE) && flake8 webtop/
+	@$(VENV_ACTIVATE) && mypy webtop/
 
 # Format code
 format: venv
 	@echo "Formatting code..."
-	@$(VENV_ACTIVATE) && black loglama/
-	@$(VENV_ACTIVATE) && isort loglama/
+	@$(VENV_ACTIVATE) && black webtop/
+	@$(VENV_ACTIVATE) && isort webtop/
 
 # Build package with Poetry
 build: venv

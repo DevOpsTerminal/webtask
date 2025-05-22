@@ -1,11 +1,11 @@
-# webtop
+# WebTop 🖥️
+
 webtop python package to start web top version in browser, [kill] like a pro!
 
-# WebTop 🖥️
 
 A modern, web-based system monitor inspired by htop with advanced file browsing, process transparency layers, and miniature file previews. Monitor your system processes through a sleek terminal-style web interface with real-time updates and comprehensive process management capabilities.
 
-![WebTop Screenshot](https://via.placeholder.com/800x400/1a1a1a/00ff00?text=WebTop+System+Monitor+v2.0)
+![webtop-logo.svg](webtop-logo.svg)
 
 ## ✨ Features
 

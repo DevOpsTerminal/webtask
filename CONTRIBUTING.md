@@ -93,36 +93,6 @@ LOGLAMA_WEB_HOST=127.0.0.1
 LOGLAMA_WEB_DEBUG=true
 ```
 
-## Project Structure
-
-```
-loglama/
-├── loglama/                 # Main package
-│   ├── core/              # Core logging functionality
-│   ├── cli/               # Command-line interface
-│   ├── api/               # REST API server
-│   ├── web/               # Web interface
-│   └── utils/             # Utility functions
-├── tests/                 # Test suite
-│   ├── unit/              # Unit tests
-│   ├── integration/       # Integration tests
-│   └── ansible/           # Ansible playbooks for testing
-├── examples/              # Example applications
-├── scripts/               # Utility scripts
-├── docs/                  # Documentation
-├── Makefile              # Development commands
-├── pyproject.toml        # Project configuration
-└── README.md             # Project overview
-```
-
-### Key Components
-
-- **`loglama/core/`**: Core logging functionality, logger configuration, and context management
-- **`loglama/cli/`**: Command-line interface for interacting with logs
-- **`loglama/api/`**: RESTful API for programmatic access to logs
-- **`loglama/web/`**: Web interface for log visualization and management
-- **`loglama/utils/`**: Common utilities and helper functions
-
 ## Development Workflow
 
 ### 1. Choose an Issue
@@ -189,44 +159,6 @@ LogLama follows PEP 8 with some specific conventions:
 - **isort**: Import sorting
 - **flake8**: Linting and style checking
 - **mypy**: Static type checking
-
-### Example Code Style
-
-```python
-from typing import Optional, Dict, Any
-import logging
-from loglama.core.context import LogContext
-
-
-class ExampleLogger:
-    """Example logger class demonstrating LogLama conventions.
-    
-    Args:
-        name: The logger name, used to identify the logger instance
-        level: The logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        console: Whether to enable console output
-        file: Whether to enable file output
-        database: Whether to enable database logging
-        **kwargs: Additional configuration options
-    
-    Returns:
-        Configured logger instance
-    
-    Raises:
-        ValueError: If an invalid logging level is provided
-        IOError: If file logging is enabled but the file cannot be created
-    
-    Example:
-        >>> logger = configure_logging(
-        ...     name="my_app",
-        ...     level="DEBUG",
-        ...     console=True,
-        ...     file=True,
-        ...     file_path="/var/log/my_app.log"
-        ... )
-        >>> logger.info("Application started")
-    """
-```
 
 ## Submitting Changes
 
@@ -439,7 +371,7 @@ make run-cli
 #### Adding a New CLI Command
 
 ```python
-# In loglama/cli/commands/new_command.py
+# In webtop/cli/commands/new_command.py
 import click
 from loglama.core.logger import get_logger
 
@@ -456,7 +388,7 @@ def new_command(param: str) -> None:
 #### Adding a New API Endpoint
 
 ```python
-# In loglama/api/routes/new_route.py
+# In webtop/api/routes/new_route.py
 from flask import Blueprint, request, jsonify
 from loglama.core.logger import get_logger
 
@@ -533,7 +465,7 @@ make view-logs    # Start web interface
 ### Example 1: Adding a New Log Filter
 
 ```python
-# Add to loglama/core/filters.py
+# Add to webtop/core/filters.py
 class DateRangeFilter:
     """Filter logs by date range."""
     
@@ -550,7 +482,7 @@ class DateRangeFilter:
 ### Example 2: Adding a New Output Format
 
 ```python
-# Add to loglama/core/formatters.py
+# Add to webtop/core/formatters.py
 class XMLFormatter:
     """Format logs as XML."""
     
