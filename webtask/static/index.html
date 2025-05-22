@@ -12,9 +12,17 @@
     <div class="header">
         <div class="title">webtask - System Monitor</div>
         <div class="system-info">
-            <div class="cpu-bar">
-                CPU: <div class="progress-bar"><div class="progress-fill" id="cpu-fill"></div></div>
-                <span id="cpu-percent">0%</span>
+            <div class="cpu-section">
+                <div class="cpu-header">
+                    <span>CPU: <span id="cpu-percent">0%</span></span>
+                    <span class="cpu-cores-count">(<span id="cpu-cores-count">4</span> cores)</span>
+                </div>
+                <div class="cpu-cores-container" id="cpu-cores-container">
+                    <!-- CPU cores will be dynamically generated here -->
+                </div>
+                <div class="cpu-chart-container">
+                    <canvas id="cpu-history-chart" height="30"></canvas>
+                </div>
             </div>
             <div class="mem-bar">
                 MEM: <div class="progress-bar"><div class="progress-fill" id="mem-fill"></div></div>
@@ -88,13 +96,13 @@
 
     <div class="main-content">
         <div class="process-header">
-            <div>PID</div>
-            <div>USER</div>
-            <div>CPU%</div>
-            <div>MEM%</div>
-            <div>TIME+</div>
-            <div>PORT</div>
-            <div>COMMAND</div>
+            <div class="sortable" data-sort="pid">PID <span class="sort-icon">⇅</span></div>
+            <div class="sortable" data-sort="user">USER <span class="sort-icon">⇅</span></div>
+            <div class="sortable" data-sort="cpu">CPU% <span class="sort-icon">⇅</span></div>
+            <div class="sortable" data-sort="mem">MEM% <span class="sort-icon">⇅</span></div>
+            <div class="sortable" data-sort="time">TIME+ <span class="sort-icon">⇅</span></div>
+            <div class="sortable" data-sort="port">PORT <span class="sort-icon">⇅</span></div>
+            <div class="sortable" data-sort="command">COMMAND <span class="sort-icon">⇅</span></div>
             <div>PREVIEW</div>
             <div>ACTION</div>
         </div>
@@ -132,6 +140,7 @@
 
     <!-- Preview Overlay -->
     <div class="preview-overlay" id="preview-overlay">
+        <button class="preview-close-button" onclick="webtask.closePreview()" title="Close Preview">&times;</button>
         <div class="preview-content">
             <div class="preview-header">
                 <span id="preview-title">File Preview</span>

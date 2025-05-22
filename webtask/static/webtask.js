@@ -1,4 +1,4 @@
-class webtask {
+class WebTask {
     constructor() {
         this.processes = [];
         this.filteredProcesses = [];
@@ -8,10 +8,17 @@ class webtask {
         this.selectedPid = null;
         this.processCounter = 1000;
         this.filterText = '';
+        this.cpuCores = 4; // Will be updated from API
+        this.cpuHistory = [];
+        this.cpuCoreValues = [];
+        this.sortConfig = {
+            column: 'cpu',
+            direction: 'desc'
+        };
+        this.updateInterval = 3000; // Update every 3 seconds
         
         this.initializeFileSystem();
-        this.initializeProcesses();
-        this.startUpdating();
+        this.fetchInitialData();
         this.bindEvents();
     }
 
@@ -60,18 +67,243 @@ class webtask {
         };
     }
 
-    initializeProcesses() {
+    // Fetch initial data from API
+    fetchInitialData() {
+        // Fetch system info first to get CPU cores count
+        this.fetchSystemInfo()
+            .then(() => {
+                // Initialize CPU cores display with the correct number of cores
+                this.initializeCpuCoresDisplay();
+                
+                // Start fetching processes
+                this.fetchProcesses();
+                
+                // Start the update interval
+                this.startUpdating();
+            })
+            .catch(error => {
+                console.error('Error fetching initial data:', error);
+                // Fallback to simulated data if API fails
+                this.simulateData();
+            });
+    }
+    
+    // Start periodic updates
+    startUpdating() {
+        // Set interval to update data periodically
+        this.updateInterval = setInterval(() => {
+            this.fetchSystemInfo();
+            this.fetchProcesses();
+        }, 3000); // Update every 3 seconds
+    }
+    
+    // Fetch system information from API
+    fetchSystemInfo() {
+        return fetch('/api/system')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Update CPU cores count
+                this.cpuCores = data.cpu.cores || 4;
+                
+                // Initialize CPU core values array if needed
+                if (this.cpuCoreValues.length !== this.cpuCores) {
+                    this.cpuCoreValues = Array(this.cpuCores).fill(0);
+                }
+                
+                // Update CPU usage display
+                const cpuUsage = data.cpu.percent;
+                document.getElementById('cpu-percent').textContent = cpuUsage.toFixed(1) + '%';
+                
+                // Update memory usage
+                const memUsage = data.memory.percent;
+                document.getElementById('mem-fill').style.width = memUsage + '%';
+                document.getElementById('mem-percent').textContent = memUsage.toFixed(1) + '%';
+                
+                // Update load average
+                const loadAvg = data.cpu.load_avg[0].toFixed(2);
+                document.getElementById('load-avg').textContent = loadAvg;
+                
+                // Update uptime
+                const uptimeSeconds = data.uptime;
+                const hours = Math.floor(uptimeSeconds / 3600);
+                const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+                const seconds = uptimeSeconds % 60;
+                document.getElementById('uptime').textContent =
+                    `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Simulate individual core values (API doesn't provide per-core data)
+                this.simulateCpuCores(cpuUsage);
+                
+                // Update CPU history chart
+                this.updateCpuHistoryChart(cpuUsage);
+            });
+    }
+    
+    // Fetch processes from API
+    fetchProcesses() {
+        return fetch('/api/processes')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Transform API data to match our process format
+                this.processes = data.map(process => ({
+                    pid: process.pid,
+                    user: process.user,
+                    cpu: process.cpu,
+                    memory: process.memory,
+                    time: this.formatTime(process.cpu_times?.user || 0),
+                    port: this.detectPort(process.name),
+                    command: process.name,
+                    file: null,
+                    service: this.detectService(process.name),
+                    parent: null,
+                    children: [],
+                    transparency: this.calculateTransparency(this.detectService(process.name)),
+                    startTime: Date.now() - Math.random() * 3600000 // Not provided by API
+                }));
+                
+                // Build process hierarchy
+                this.buildProcessHierarchy();
+                
+                // Sort processes according to current sort configuration
+                this.sortProcesses();
+                
+                // Apply any active filters
+                this.applyFilter();
+                
+                // Render the updated process list
+                this.renderProcesses();
+            });
+    }
+    
+    // Detect service name from command
+    detectService(command) {
+        if (!command) return 'unknown';
+        
+        const commandLower = command.toLowerCase();
+        if (commandLower.includes('systemd')) return 'systemd';
+        if (commandLower.includes('nginx')) return 'nginx';
+        if (commandLower.includes('node')) return 'node';
+        if (commandLower.includes('python')) return 'python3';
+        if (commandLower.includes('bash')) return 'bash';
+        if (commandLower.includes('ssh')) return 'sshd';
+        if (commandLower.includes('mysql')) return 'mysql';
+        if (commandLower.includes('redis')) return 'redis';
+        if (commandLower.includes('docker')) return 'docker';
+        
+        // Extract first word as service name
+        return command.split(' ')[0];
+    }
+    
+    // Detect port from command
+    detectPort(command) {
+        if (!command) return null;
+        
+        // Common port patterns
+        const portPatterns = {
+            'nginx': 80,
+            'apache': 80,
+            'node': 3000,
+            'python -m http.server': 8000,
+            'ssh': 22,
+            'mysql': 3306,
+            'redis': 6379
+        };
+        
+        // Check for port patterns
+        for (const [pattern, port] of Object.entries(portPatterns)) {
+            if (command.toLowerCase().includes(pattern)) {
+                return port;
+            }
+        }
+        
+        // Try to extract port from command (e.g., "server --port=8080")
+        const portMatch = command.match(/--port[=\s](\d+)|:(\d+)/);
+        if (portMatch) {
+            return parseInt(portMatch[1] || portMatch[2]);
+        }
+        
+        return null;
+    }
+    
+    // Format time in seconds to HH:MM:SS
+    formatTime(seconds) {
+        seconds = Math.floor(seconds);
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // Simulate CPU cores data (API doesn't provide per-core data)
+    simulateCpuCores(overallCpuUsage) {
+        // Base the simulation on the overall CPU usage
+        const baseLoad = overallCpuUsage * 0.8; // 80% of the overall load as base
+        
+        for (let i = 0; i < this.cpuCores; i++) {
+            // Each core gets the base load plus individual variation
+            let coreLoad = baseLoad;
+            
+            // Add some random variation to each core
+            coreLoad += (Math.random() - 0.5) * 20;
+            
+            // Add occasional spikes to random cores
+            if (Math.random() < 0.1) {
+                coreLoad += Math.random() * 30;
+            }
+            
+            // Ensure value is between 0-100
+            coreLoad = Math.min(100, Math.max(0, coreLoad));
+            
+            // Store the value
+            this.cpuCoreValues[i] = coreLoad;
+            
+            // Update the visual elements
+            this.updateCpuCoreDisplay(i, coreLoad);
+        }
+    }
+    
+    // Update a single CPU core display
+    updateCpuCoreDisplay(coreIndex, value) {
+        const fillElement = document.getElementById(`cpu-core-fill-${coreIndex}`);
+        const valueElement = document.getElementById(`cpu-core-value-${coreIndex}`);
+        
+        if (fillElement && valueElement) {
+            fillElement.style.width = value + '%';
+            valueElement.textContent = value.toFixed(1) + '%';
+            
+            // Add color indication based on load
+            if (value > 80) {
+                fillElement.style.backgroundColor = '#ff3300';
+            } else if (value > 50) {
+                fillElement.style.backgroundColor = '#ffcc00';
+            } else {
+                fillElement.style.backgroundColor = '#33cc33';
+            }
+        }
+    }
+    
+    // Fallback to simulated data if API fails
+    simulateData() {
+        console.log('Using simulated data');
+        
+        // Create simulated processes
         const processTemplates = [
-            { cmd: 'systemd', user: 'root', port: null, file: null, service: 'systemd', parent: null },
-            { cmd: '/usr/sbin/nginx', user: 'www-data', port: 80, file: '/usr/sbin/nginx', service: 'nginx', parent: 1 },
-            { cmd: 'nginx: worker process', user: 'www-data', port: 80, file: '/usr/sbin/nginx', service: 'nginx', parent: 'nginx' },
-            { cmd: 'node /var/www/html/app.js', user: 'user', port: 3000, file: '/var/www/html/app.js', service: 'node', parent: null },
-            { cmd: '/bin/bash /usr/local/bin/myapp', user: 'user', port: null, file: '/usr/local/bin/myapp', service: 'bash', parent: null },
-            { cmd: 'python3 -m http.server 8000', user: 'user', port: 8000, file: '/usr/bin/python3', service: 'python3', parent: null },
-            { cmd: 'sshd: /usr/sbin/sshd -D', user: 'root', port: 22, file: '/usr/sbin/sshd', service: 'sshd', parent: null },
-            { cmd: 'mysql', user: 'mysql', port: 3306, file: '/usr/bin/mysql', service: 'mysql', parent: null },
-            { cmd: 'redis-server', user: 'redis', port: 6379, file: '/usr/bin/redis-server', service: 'redis', parent: null },
-            { cmd: 'docker daemon', user: 'root', port: null, file: '/usr/bin/dockerd', service: 'docker', parent: null }
+            { cmd: 'systemd', user: 'root', port: null, service: 'systemd', parent: null },
+            { cmd: '/usr/sbin/nginx', user: 'www-data', port: 80, service: 'nginx', parent: 1 },
+            { cmd: 'nginx: worker process', user: 'www-data', port: 80, service: 'nginx', parent: 'nginx' },
+            { cmd: 'node /var/www/html/app.js', user: 'user', port: 3000, service: 'node', parent: null },
+            { cmd: 'python3 -m http.server 8000', user: 'user', port: 8000, service: 'python3', parent: null },
+            { cmd: 'sshd: /usr/sbin/sshd -D', user: 'root', port: 22, service: 'sshd', parent: null }
         ];
 
         this.processes = processTemplates.map((template, index) => ({
@@ -79,10 +311,10 @@ class webtask {
             user: template.user,
             cpu: Math.random() * 15,
             memory: Math.random() * 25,
-            time: this.generateTime(),
+            time: this.formatTime(Math.random() * 3600),
             port: template.port,
             command: template.cmd,
-            file: template.file,
+            file: null,
             service: template.service,
             parent: template.parent,
             children: [],
@@ -92,8 +324,199 @@ class webtask {
 
         this.processCounter += processTemplates.length;
         this.buildProcessHierarchy();
-        this.processes.sort((a, b) => b.cpu - a.cpu);
+        this.sortProcesses();
         this.applyFilter();
+        this.renderProcesses();
+        
+        // Initialize CPU cores display
+        this.initializeCpuCoresDisplay();
+        
+        // Start simulated updates
+        setInterval(() => {
+            this.updateSimulatedData();
+        }, 3000);
+    }
+    
+    // Update simulated data
+    updateSimulatedData() {
+        // Update CPU usage
+        const cpuUsage = Math.random() * 100;
+        document.getElementById('cpu-percent').textContent = cpuUsage.toFixed(1) + '%';
+        
+        // Update memory usage
+        const memUsage = Math.random() * 100;
+        document.getElementById('mem-fill').style.width = memUsage + '%';
+        document.getElementById('mem-percent').textContent = memUsage.toFixed(1) + '%';
+        
+        // Update load average
+        const loadAvg = (Math.random() * 4).toFixed(2);
+        document.getElementById('load-avg').textContent = loadAvg;
+        
+        // Update uptime
+        const uptime = Date.now() - this.startTime;
+        const hours = Math.floor(uptime / 3600000);
+        const minutes = Math.floor((uptime % 3600000) / 60000);
+        const seconds = Math.floor((uptime % 60000) / 1000);
+        document.getElementById('uptime').textContent =
+            `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Simulate CPU cores
+        this.simulateCpuCores(cpuUsage);
+        
+        // Update CPU history chart
+        this.updateCpuHistoryChart(cpuUsage);
+        
+        // Update process data
+        this.processes.forEach(process => {
+            process.cpu += (Math.random() - 0.5) * 2;
+            process.cpu = Math.max(0, Math.min(100, process.cpu));
+
+            process.memory += (Math.random() - 0.5) * 1;
+            process.memory = Math.max(0, Math.min(100, process.memory));
+        });
+        
+        // Sort and render processes
+        this.sortProcesses();
+        this.applyFilter();
+        this.renderProcesses();
+    }
+
+    initializeCpuCoresDisplay() {
+        const container = document.getElementById('cpu-cores-container');
+        container.innerHTML = ''; // Clear container
+        
+        // Update the cores count in the UI
+        document.getElementById('cpu-cores-count').textContent = this.cpuCores;
+        
+        // Create elements for each CPU core
+        for (let i = 0; i < this.cpuCores; i++) {
+            const coreElement = document.createElement('div');
+            coreElement.className = 'cpu-core';
+            coreElement.innerHTML = `
+                <div class="cpu-core-label">Core ${i}</div>
+                <div class="cpu-core-bar">
+                    <div class="cpu-core-fill" id="cpu-core-fill-${i}" style="width: 0%"></div>
+                </div>
+                <div class="cpu-core-value" id="cpu-core-value-${i}">0%</div>
+            `;
+            container.appendChild(coreElement);
+        }
+        
+        // Initialize CPU history chart
+        this.initializeCpuHistoryChart();
+    }
+    
+    // Update CPU cores with simulated activity
+    updateCpuCores() {
+        // Simulate CPU core activity with some correlation between cores
+        // This creates more realistic patterns where cores tend to work together
+        const baseLoad = Math.random() * 40; // Base load affects all cores
+        
+        for (let i = 0; i < this.cpuCores; i++) {
+            // Each core gets the base load plus individual variation
+            // Some cores will spike higher than others to simulate real workloads
+            let coreLoad = baseLoad;
+            
+            // Add some random variation to each core
+            coreLoad += Math.random() * 60;
+            
+            // Add occasional spikes to random cores
+            if (Math.random() < 0.1) {
+                coreLoad += Math.random() * 40;
+            }
+            
+            // Ensure value is between 0-100
+            coreLoad = Math.min(100, Math.max(0, coreLoad));
+            
+            // Store the value
+            this.cpuCoreValues[i] = coreLoad;
+            
+            // Update the visual elements
+            const fillElement = document.getElementById(`cpu-core-fill-${i}`);
+            const valueElement = document.getElementById(`cpu-core-value-${i}`);
+            
+            if (fillElement && valueElement) {
+                fillElement.style.width = coreLoad + '%';
+                valueElement.textContent = coreLoad.toFixed(1) + '%';
+                
+                // Add color indication based on load
+                if (coreLoad > 80) {
+                    fillElement.style.backgroundColor = '#ff3300';
+                } else if (coreLoad > 50) {
+                    fillElement.style.backgroundColor = '#ffcc00';
+                } else {
+                    fillElement.style.backgroundColor = '#33cc33';
+                }
+            }
+        }
+    }
+    
+    // Initialize the CPU history chart
+    initializeCpuHistoryChart() {
+        // We'll use a simple canvas-based chart for CPU history
+        this.cpuHistoryCanvas = document.getElementById('cpu-history-chart');
+        this.cpuHistoryContext = this.cpuHistoryCanvas.getContext('2d');
+        
+        // Initialize with empty data
+        this.cpuHistory = Array(50).fill(0);
+        
+        // Set canvas size
+        this.cpuHistoryCanvas.width = this.cpuHistoryCanvas.parentElement.clientWidth;
+    }
+    
+    // Update the CPU history chart with new data
+    updateCpuHistoryChart(cpuUsage) {
+        // Add new value to history and remove oldest
+        this.cpuHistory.push(cpuUsage);
+        if (this.cpuHistory.length > 50) {
+            this.cpuHistory.shift();
+        }
+        
+        // Clear canvas
+        const ctx = this.cpuHistoryContext;
+        const canvas = this.cpuHistoryCanvas;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw chart background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw grid lines
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            const y = canvas.height * (i / 4);
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+        }
+        ctx.stroke();
+        
+        // Draw CPU history line
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        const step = canvas.width / (this.cpuHistory.length - 1);
+        
+        for (let i = 0; i < this.cpuHistory.length; i++) {
+            const x = i * step;
+            const y = canvas.height - (this.cpuHistory[i] / 100 * canvas.height);
+            
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        
+        ctx.stroke();
+        
+        // Fill area under the line
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.lineTo(0, canvas.height);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
+        ctx.fill();
     }
 
     buildProcessHierarchy() {
@@ -153,11 +576,13 @@ class webtask {
     }
 
     updateSystemStats() {
-        const cpuUsage = Math.random() * 100;
+        // Calculate overall CPU usage as average of all cores
+        this.updateCpuCores();
+        
+        const cpuUsage = this.cpuCoreValues.reduce((sum, value) => sum + value, 0) / this.cpuCores;
         const memUsage = Math.random() * 100;
         const loadAvg = (Math.random() * 4).toFixed(2);
 
-        document.getElementById('cpu-fill').style.width = cpuUsage + '%';
         document.getElementById('cpu-percent').textContent = cpuUsage.toFixed(1) + '%';
 
         document.getElementById('mem-fill').style.width = memUsage + '%';
@@ -172,44 +597,50 @@ class webtask {
         const seconds = Math.floor((uptime % 60000) / 1000);
         document.getElementById('uptime').textContent =
             `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+        // Update CPU history chart
+        this.updateCpuHistoryChart(cpuUsage);
     }
 
-    updateProcesses() {
-        // Simulate process changes
-        this.processes.forEach(process => {
-            process.cpu += (Math.random() - 0.5) * 2;
-            process.cpu = Math.max(0, Math.min(100, process.cpu));
-
-            process.memory += (Math.random() - 0.5) * 1;
-            process.memory = Math.max(0, Math.min(100, process.memory));
+    // Sort processes according to current sort configuration
+    sortProcesses() {
+        const { column, direction } = this.sortConfig;
+        const multiplier = direction === 'asc' ? 1 : -1;
+        
+        this.processes.sort((a, b) => {
+            switch (column) {
+                case 'pid':
+                    return (a.pid - b.pid) * multiplier;
+                case 'user':
+                    return a.user.localeCompare(b.user) * multiplier;
+                case 'cpu':
+                    return (a.cpu - b.cpu) * multiplier;
+                case 'mem':
+                    return (a.memory - b.memory) * multiplier;
+                case 'time':
+                    // Convert time strings to seconds for comparison
+                    const aTime = this.timeToSeconds(a.time);
+                    const bTime = this.timeToSeconds(b.time);
+                    return (aTime - bTime) * multiplier;
+                case 'port':
+                    // Handle null ports
+                    if (!a.port && !b.port) return 0;
+                    if (!a.port) return 1 * multiplier;
+                    if (!b.port) return -1 * multiplier;
+                    return (a.port - b.port) * multiplier;
+                case 'command':
+                    return a.command.localeCompare(b.command) * multiplier;
+                default:
+                    return (a.cpu - b.cpu) * multiplier; // Default to CPU sorting
+            }
         });
-
-        // Occasionally add new processes
-        if (Math.random() < 0.1 && this.processes.length < 50) {
-            const commands = ['node app.js', 'python3 server.py', 'java -jar app.jar', 'go run main.go'];
-            const command = commands[Math.floor(Math.random() * commands.length)];
-            const port = Math.random() < 0.3 ? Math.floor(Math.random() * 9000) + 1000 : null;
-
-            this.processes.push({
-                pid: this.processCounter++,
-                user: 'user',
-                cpu: Math.random() * 5,
-                memory: Math.random() * 10,
-                time: this.generateTime(),
-                port: port,
-                command: command,
-                file: command.includes('node') ? '/var/www/html/app.js' : null,
-                service: command.split(' ')[0],
-                parent: null,
-                children: [],
-                transparency: 0.9,
-                startTime: Date.now()
-            });
-        }
-
-        // Sort by CPU usage
-        this.processes.sort((a, b) => b.cpu - a.cpu);
-        this.applyFilter();
+    }
+    
+    // Convert time string (HH:MM:SS) to seconds for sorting
+    timeToSeconds(timeString) {
+        if (!timeString) return 0;
+        const [hours, minutes, seconds] = timeString.split(':').map(Number);
+        return hours * 3600 + minutes * 60 + seconds;
     }
 
     generatePreviewThumbnail(process) {
@@ -247,7 +678,7 @@ class webtask {
             thumbnailContent = `<div>⚙️</div><div>${process.service}</div>`;
         }
 
-        return { class: thumbnailClass, content: thumbnailContent };
+        return { 'class': thumbnailClass, content: thumbnailContent };
     }
 
     renderProcesses() {
@@ -284,7 +715,7 @@ class webtask {
                     ${process.command}
                 </div>
                 <div class="process-preview" onclick="webtask.showPreview(${process.pid})">
-                    <div class="${thumbnail.class}">${thumbnail.content}</div>
+                    <div class="${thumbnail['class']}">${thumbnail.content}</div>
                     <span class="preview-icon">👁️</span>
                 </div>
                 <div class="kill-options">
@@ -367,421 +798,232 @@ class webtask {
         const title = document.getElementById('preview-title');
         const body = document.getElementById('preview-body');
 
-        title.textContent = `Preview - PID ${pid}: ${process.command}`;
+        title.textContent = `Process Details - PID ${pid}: ${process.command}`;
 
+        // Calculate additional information
+        const uptime = this.formatTime(process.time);
+        const memoryUsage = (process.mem * 100).toFixed(2) + '%';
+        const cpuUsage = (process.cpu * 100).toFixed(2) + '%';
+        const status = process.transparency < 0.8 ? 'Background Process' : 'Active Process';
+        const startTime = new Date(Date.now() - process.time * 1000).toLocaleString();
+        
         if (process.file && this.getFileContent(process.file)) {
             const content = this.getFileContent(process.file);
             const isHTML = process.file.endsWith('.html');
 
-            if (isHTML) {
-                body.className = 'preview-body html-render';
-                body.innerHTML = content;
-            } else {
-                body.className = 'preview-body';
-                body.textContent = content;
-            }
-        } else if (process.port) {
-            body.className = 'preview-body';
-            body.textContent = `Service running on port ${process.port}\n\nProcess: ${process.command}\nUser: ${process.user}\nPID: ${process.pid}\n\nThis service is ${process.transparency < 0.8 ? 'running in background' : 'actively serving requests'}.`;
-        } else {
-            body.className = 'preview-body';
-            body.textContent = `Process Information:\n\nCommand: ${process.command}\nUser: ${process.user}\nPID: ${process.pid}\nService: ${process.service}\n\nThis is a ${process.transparency < 0.8 ? 'background system process' : 'user-visible process'}.`;
-        }
-
-        overlay.classList.add('show');
-    }
-
-    closePreview() {
-        document.getElementById('preview-overlay').classList.remove('show');
-    }
-
-    showProcessDetails(pid) {
-        const process = this.processes.find(p => p.pid === pid);
-        if (!process) return;
-
-        const modal = document.getElementById('process-details-modal');
-        const detailsPid = document.getElementById('details-pid');
-        const content = document.getElementById('process-details-content');
-
-        detailsPid.textContent = pid;
-
-        const children = process.children.map(childPid => {
-            const child = this.processes.find(p => p.pid === childPid);
-            return child ? `${child.pid} (${child.command})` : childPid;
-        }).join(', ') || 'None';
-
-        content.innerHTML = `
-            <div class="detail-section">
-                <h4>Process Information</h4>
-                <div class="detail-row">
-                    <span class="detail-label">PID:</span>
-                    <span class="detail-value">${process.pid}</span>
+            // Create a structured view with file information and content
+            body.className = 'preview-body process-info';
+            body.innerHTML = `
+                <div class="preview-info-section">
+                    <h3>Process Information</h3>
+                    <div class="preview-info-row"><span class="preview-info-label">PID:</span> <span>${process.pid}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">User:</span> <span>${process.user}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Command:</span> <span>${process.command}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">CPU Usage:</span> <span>${cpuUsage}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Memory Usage:</span> <span>${memoryUsage}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Uptime:</span> <span>${uptime}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Started:</span> <span>${startTime}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Status:</span> <span>${status}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">File:</span> <span>${process.file}</span></div>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Command:</span>
-                    <span class="detail-value">${process.command}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">User:</span>
-                    <span class="detail-value">${process.user}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Service:</span>
-                    <span class="detail-value">${process.service}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">File:</span>
-                    <span class="detail-value">${process.file || 'N/A'}</span>
-                </div>
-            </div>
-            <div class="detail-section">
-                <h4>Resource Usage</h4>
-                <div class="detail-row">
-                    <span class="detail-label">CPU:</span>
-                    <span class="detail-value">${process.cpu.toFixed(2)}%</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Memory:</span>
-                    <span class="detail-value">${process.memory.toFixed(2)}%</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Runtime:</span>
-                    <span class="detail-value">${process.time}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Port:</span>
-                    <span class="detail-value">${process.port || 'N/A'}</span>
-                </div>
-            </div>
-            <div class="detail-section">
-                <h4>Process Hierarchy</h4>
-                <div class="detail-row">
-                    <span class="detail-label">Parent PID:</span>
-                    <span class="detail-value">${process.parentPid || 'None'}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Children:</span>
-                    <span class="detail-value">${children}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Transparency:</span>
-                    <span class="detail-value">${(process.transparency * 100).toFixed(0)}%</span>
-                </div>
-            </div>
-        `;
-
-        modal.classList.add('show');
-    }
-
-    closeProcessDetails() {
-        document.getElementById('process-details-modal').classList.remove('show');
-    }
-
-    toggleKillDropdown(event, pid) {
-        event.stopPropagation();
-        const dropdown = document.getElementById(`dropdown-${pid}`);
-
-        // Close all other dropdowns
-        document.querySelectorAll('.kill-dropdown').forEach(d => {
-            if (d !== dropdown) d.classList.remove('show');
-        });
-
-        dropdown.classList.toggle('show');
-    }
-
-    killProcessWithSignal(pid, signal) {
-        const process = this.processes.find(p => p.pid === pid);
-        if (process) {
-            console.log(`Sending ${signal} signal to PID ${pid} (${process.command})`);
-            this.killProcess(pid);
-        }
-
-        // Close dropdown
-        document.getElementById(`dropdown-${pid}`).classList.remove('show');
-    }
-
-    killProcess(pid) {
-        const index = this.processes.findIndex(p => p.pid === pid);
-        if (index !== -1) {
-            const process = this.processes[index];
-
-            // Kill child processes first
-            if (process.children.length > 0) {
-                process.children.forEach(childPid => {
-                    this.killProcess(childPid);
-                });
-            }
-
-            this.processes.splice(index, 1);
-            if (this.selectedPid === pid) {
-                this.selectedPid = null;
-                document.getElementById('selected-pid').textContent = 'none';
-            }
-            this.applyFilter();
-            this.renderProcesses();
-        }
-    }
-
-    executeAdvancedKill() {
-        const pidInput = document.getElementById('kill-pid').value;
-        const serviceInput = document.getElementById('kill-service').value;
-        const portInput = document.getElementById('kill-port').value;
-        const userInput = document.getElementById('kill-user').value;
-        const signal = document.getElementById('signal-type').value;
-
-        let targetProcesses = [];
-
-        if (pidInput) {
-            const process = this.processes.find(p => p.pid == pidInput);
-            if (process) targetProcesses.push(process);
-        }
-
-        if (serviceInput) {
-            targetProcesses.push(...this.processes.filter(p =>
-                p.service.toLowerCase().includes(serviceInput.toLowerCase()) ||
-                p.command.toLowerCase().includes(serviceInput.toLowerCase())
-            ));
-        }
-
-        if (portInput) {
-            targetProcesses.push(...this.processes.filter(p =>
-                p.port == portInput
-            ));
-        }
-
-        if (userInput) {
-            targetProcesses.push(...this.processes.filter(p =>
-                p.user.toLowerCase().includes(userInput.toLowerCase())
-            ));
-        }
-
-        // Remove duplicates
-        const uniqueProcesses = [...new Set(targetProcesses)];
-
-        if (uniqueProcesses.length === 0) {
-            alert('No processes found matching the criteria');
-            return;
-        }
-
-        const confirmMsg = `Kill ${uniqueProcesses.length} process(es) with ${signal}?\n\n` +
-            uniqueProcesses.map(p => `PID ${p.pid}: ${p.command}`).join('\n');
-
-        if (confirm(confirmMsg)) {
-            uniqueProcesses.forEach(process => {
-                console.log(`Sending ${signal} to PID ${process.pid} (${process.command})`);
-                this.killProcess(process.pid);
-            });
-
-            // Clear inputs
-            document.getElementById('kill-pid').value = '';
-            document.getElementById('kill-service').value = '';
-            document.getElementById('kill-port').value = '';
-            document.getElementById('kill-user').value = '';
-        }
-    }
-
-    killAllFiltered() {
-        if (this.filteredProcesses.length === 0) {
-            alert('No filtered processes to kill');
-            return;
-        }
-
-        const signal = document.getElementById('signal-type').value;
-        const confirmMsg = `Kill ALL ${this.filteredProcesses.length} filtered processes with ${signal}?`;
-
-        if (confirm(confirmMsg)) {
-            this.filteredProcesses.forEach(process => {
-                console.log(`Sending ${signal} to PID ${process.pid} (${process.command})`);
-                this.killProcess(process.pid);
-            });
-        }
-    }
-
-    showFileBrowser() {
-        this.currentPath = '/';
-        this.renderFileBrowser();
-        document.getElementById('file-browser-modal').classList.add('show');
-    }
-
-    closeFileBrowser() {
-        document.getElementById('file-browser-modal').classList.remove('show');
-    }
-
-    renderFileBrowser() {
-        const pathElement = document.getElementById('current-path');
-        const breadcrumbElement = document.getElementById('breadcrumb');
-        const fileListElement = document.getElementById('file-list');
-
-        pathElement.textContent = this.currentPath;
-
-        // Render breadcrumb
-        const pathParts = this.currentPath.split('/').filter(Boolean);
-        breadcrumbElement.innerHTML = `
-            <span class="breadcrumb-item" onclick="webtask.navigateToPath('/')">/</span>
-            ${pathParts.map((part, index) => {
-            const path = '/' + pathParts.slice(0, index + 1).join('/');
-            return `<span class="breadcrumb-item" onclick="webtask.navigateToPath('${path}')">${part}</span>`;
-        }).join(' / ')}
-        `;
-
-        // Get current directory
-        const currentDir = this.getDirectoryAtPath(this.currentPath);
-        if (!currentDir || !currentDir.children) {
-            fileListElement.innerHTML = '<div>Directory not found</div>';
-            return;
-        }
-
-        // Render files
-        fileListElement.innerHTML = '';
-        Object.entries(currentDir.children).forEach(([name, item]) => {
-            const fileItem = document.createElement('div');
-            fileItem.className = `file-item ${item.type}`;
-
-            let icon = '📄';
-            if (item.type === 'directory') icon = '📁';
-            else if (item.type === 'executable') icon = '⚙️';
-            else if (item.type === 'script') icon = '📜';
-            else if (item.type === 'html') icon = '🌐';
-            else if (item.type === 'config') icon = '⚙️';
-            else if (item.type === 'service') icon = '🔧';
-            else if (item.type === 'log') icon = '📋';
-
-            fileItem.innerHTML = `
-                <div class="file-icon">${icon}</div>
-                <div class="file-info">
-                    <div class="file-name">${name}</div>
-                    <div class="file-size">${item.size ? this.formatFileSize(item.size) : ''}</div>
+                <div class="preview-info-section">
+                    <h3>File Content</h3>
+                    <div class="file-content ${isHTML ? 'html-content' : ''}">${isHTML ? content : this.escapeHTML(content)}</div>
                 </div>
             `;
+        } else if (process.port) {
+            // Create a structured view for network services
+            body.className = 'preview-body process-info';
+            body.innerHTML = `
+                <div class="preview-info-section">
+                    <h3>Process Information</h3>
+                    <div class="preview-info-row"><span class="preview-info-label">PID:</span> <span>${process.pid}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">User:</span> <span>${process.user}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Command:</span> <span>${process.command}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">CPU Usage:</span> <span>${cpuUsage}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Memory Usage:</span> <span>${memoryUsage}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Uptime:</span> <span>${uptime}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Started:</span> <span>${startTime}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Status:</span> <span>${status}</span></div>
+                </div>
+                <div class="preview-info-section">
+                    <h3>Network Information</h3>
+                    <div class="preview-info-row"><span class="preview-info-label">Port:</span> <span>${process.port}</span></div>
+                    <div class="preview-info-row"><span class="preview-info-label">Service Type:</span> <span>${process.service || 'Unknown'}</span></div>
+    
+    this.filteredProcesses.sort((a, b) => {
+        let valueA, valueB;
+        
+        switch(column) {
+            case 'pid':
+                return (a.pid - b.pid) * multiplier;
+            case 'user':
+                return (a.user.localeCompare(b.user)) * multiplier;
+            case 'cpu':
+                return (a.cpu - b.cpu) * multiplier;
+            case 'mem':
+                return (a.mem - b.mem) * multiplier;
+            case 'time':
+                return (a.time - b.time) * multiplier;
+            case 'port':
+                // Handle null ports
+                if (!a.port && !b.port) return 0;
+                if (!a.port) return 1 * multiplier;
+                if (!b.port) return -1 * multiplier;
+                return (a.port - b.port) * multiplier;
+            case 'command':
+                return (a.command.localeCompare(b.command)) * multiplier;
+            default:
+                return 0;
+        }
+    });
 
-            fileItem.addEventListener('click', () => {
-                if (item.type === 'directory') {
-                    this.navigateToPath(this.currentPath === '/' ? `/${name}` : `${this.currentPath}/${name}`);
-                } else {
-                    this.openFile(this.currentPath === '/' ? `/${name}` : `${this.currentPath}/${name}`);
-                }
-            });
+    // Re-render the processes with the new sort order
+    this.renderProcesses();
+}
 
-            fileListElement.appendChild(fileItem);
+renderProcesses() {
+    const processList = document.getElementById('process-list');
+    processList.innerHTML = '';
+
+    this.filteredProcesses.forEach(process => {
+        const row = document.createElement('div');
+        row.className = 'process-row';
+
+        if (process.cpu > 10) row.classList.add('high-cpu');
+        if (process.memory > 20) row.classList.add('high-mem');
+        if (process.transparency < 0.8) row.classList.add('transparent');
+
+        // Add hierarchy indicator
+        let hierarchyIndicator = '';
+        if (process.parentPid) {
+            const depth = this.getProcessDepth(process);
+            const hierarchyClass = depth === 1 ? 'child' : 'grandchild';
+            hierarchyIndicator = `<div class="process-hierarchy ${hierarchyClass}"></div>`;
+        }
+
+        const thumbnail = this.generatePreviewThumbnail(process);
+
+        row.innerHTML = `
+            ${hierarchyIndicator}
+            <div class="sortable" data-sort="pid">${process.pid}</div>
+            <div class="sortable" data-sort="user">${process.user}</div>
+            <div class="sortable" data-sort="cpu">${process.cpu.toFixed(1)}</div>
+            <div class="sortable" data-sort="mem">${process.memory.toFixed(1)}</div>
+            <div class="sortable" data-sort="time">${process.time}</div>
+            <div class="sortable" data-sort="port">${process.port || '-'}</div>
+            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${process.command}">
+                ${process.command}
+            </div>
+            <div class="process-preview" onclick="webtask.showPreview(${process.pid})">
+                <div class="${thumbnail['class']}">${thumbnail.content}</div>
+                <span class="preview-icon">👁️</span>
+            </div>
+            <div class="kill-options">
+                <button class="kill-btn" onclick="webtask.toggleKillDropdown(event, ${process.pid})">
+                    KILL ▼
+                </button>
+                <div class="kill-dropdown" id="dropdown-${process.pid}">
+                    <div class="kill-option" onclick="webtask.killProcessWithSignal(${process.pid}, 'TERM')">
+                        SIGTERM (Graceful)
+                    </div>
+                    <div class="kill-option danger" onclick="webtask.killProcessWithSignal(${process.pid}, 'KILL')">
+                        SIGKILL (Force)
+                    </div>
+                    <div class="kill-option" onclick="webtask.killProcessWithSignal(${process.pid}, 'INT')">
+                        SIGINT (Interrupt)
+                    </div>
+                    <div class="kill-option" onclick="webtask.killProcessWithSignal(${process.pid}, 'HUP')">
+                        SIGHUP (Hangup)
+                    </div>
+                </div>
+            </div>
+        `;
+
+        row.style.opacity = process.transparency;
+
+        row.addEventListener('click', (e) => {
+            if (!e.target.closest('.kill-options') && !e.target.closest('.process-preview')) {
+                this.selectedPid = process.pid;
+                document.getElementById('selected-pid').textContent = process.pid;
+
+                // Remove previous selection
+                document.querySelectorAll('.process-row').forEach(r =>
+                    r.style.background = '');
+                row.style.background = '#444';
+            }
         });
-    }
 
-    getDirectoryAtPath(path) {
-        const parts = path.split('/').filter(Boolean);
-        let current = this.fileSystem['/'];
+        row.addEventListener('dblclick', () => {
+            this.showProcessDetails(process.pid);
+        });
 
-        for (const part of parts) {
-            if (current.children && current.children[part]) {
-                current = current.children[part];
-            } else {
-                return null;
-            }
-        }
+        processList.appendChild(row);
+    });
 
-        return current;
-    }
+    document.getElementById('process-count').textContent = this.processes.length;
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+}
 
-    navigateToPath(path) {
-        this.currentPath = path;
-        this.renderFileBrowser();
-    }
-
-    openFile(filePath) {
-        const file = this.getDirectoryAtPath(filePath);
-        if (file && file.content) {
-            this.closeFileBrowser();
-
-            // Show file content in preview
-            const overlay = document.getElementById('preview-overlay');
-            const title = document.getElementById('preview-title');
-            const body = document.getElementById('preview-body');
-
-            title.textContent = `File: ${filePath}`;
-
-            if (filePath.endsWith('.html')) {
-                body.className = 'preview-body html-render';
-                body.innerHTML = file.content;
-            } else {
-                body.className = 'preview-body';
-                body.textContent = file.content;
-            }
-
-            overlay.classList.add('show');
-        }
-    }
-
-    formatFileSize(bytes) {
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        if (bytes === 0) return '0 B';
-        const i = Math.floor(Math.log(bytes) / Math.log(1024));
-        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-    }
-
-    startUpdating() {
-        setInterval(() => {
-            this.updateSystemStats();
-            this.updateProcesses();
-            this.renderProcesses();
-        }, 2000);
-
-        // Initial render
-        this.updateSystemStats();
+bindEvents() {
+    // Filter processes when typing in the search box
+    document.getElementById('search-filter').addEventListener('input', (e) => {
+        this.filterText = e.target.value.toLowerCase();
+        this.filterProcesses();
         this.renderProcesses();
-    }
+    });
 
-    bindEvents() {
-        // Search filter
-        document.getElementById('search-filter').addEventListener('input', (e) => {
-            this.filterText = e.target.value;
-            this.applyFilter();
-            this.renderProcesses();
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case 'F1':
-                    e.preventDefault();
-                    document.getElementById('advanced-controls').classList.toggle('show');
-                    break;
-                case 'F2':
-                    e.preventDefault();
-                    this.showFileBrowser();
-                    break;
-                case 'F9':
-                    e.preventDefault();
-                    if (this.selectedPid) {
-                        this.killProcess(this.selectedPid);
-                    }
-                    break;
-                case 'F10':
-                    e.preventDefault();
-                    if (confirm('Really quit webtask?')) {
-                        window.close();
-                    }
-                    break;
-                case 'q':
-                    if (confirm('Really quit webtask?')) {
-                        window.close();
-                    }
-                    break;
-                case 'Escape':
-                    // Close any open modals
-                    document.querySelectorAll('.modal').forEach(modal => {
-                        modal.classList.remove('show');
-                    });
-                    document.getElementById('preview-overlay').classList.remove('show');
-                    break;
+    // Global click handler for closing dropdowns
+    document.addEventListener('click', (e) => {
+        const dropdowns = document.querySelectorAll('.kill-dropdown.show');
+        dropdowns.forEach(dropdown => {
+            if (!e.target.closest('.kill-options') && !e.target.closest('.process-preview')) {
+                dropdown.classList.remove('show');
             }
         });
+    });
 
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.kill-dropdown').forEach(dropdown => {
-                dropdown.classList.remove('show');
-            });
+    // Add click handlers for sortable columns
+    document.querySelectorAll('.sortable').forEach(column => {
+        column.addEventListener('click', (e) => {
+            const sortBy = column.getAttribute('data-sort');
+            this.sortProcesses(sortBy);
         });
-    }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'F1') {
+            e.preventDefault();
+            const advancedControls = document.getElementById('advanced-controls');
+            advancedControls.classList.toggle('show');
+        } else if (e.key === 'F2') {
+            e.preventDefault();
+            this.openFileBrowser();
+        } else if (e.key === 'F5') {
+            e.preventDefault();
+            this.toggleTreeView();
+        } else if (e.key === 'F6') {
+            e.preventDefault();
+            this.toggleSortOrder();
+        } else if (e.key === 'F9') {
+            e.preventDefault();
+            if (this.selectedPid) {
+                this.killProcess(this.selectedPid);
+            }
+        } else if (e.key === 'F10' || e.key === 'Escape') {
+            e.preventDefault();
+            if (document.getElementById('file-browser-modal').classList.contains('show')) {
+                this.closeFileBrowser();
+            } else if (document.getElementById('process-details-modal').classList.contains('show')) {
+                this.closeProcessDetails();
+            } else if (document.getElementById('preview-overlay').classList.contains('show')) {
+                document.getElementById('preview-overlay').classList.remove('show');
+            } else if (document.getElementById('advanced-controls').classList.contains('show')) {
+                document.getElementById('advanced-controls').classList.remove('show');
+            }
+        }
+    });
 }
 
 // Initialize webtask
