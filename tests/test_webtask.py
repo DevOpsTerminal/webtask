@@ -4,11 +4,11 @@ Tests for webtask
 
 import pytest
 from unittest.mock import patch, MagicMock
-from webtask.server import webtaskServer
+from webtask.server import webtaskServer, WebTaskHandler
 from webtask.main import main
 
 
-class TestwebtaskServer:
+class TestWebTaskServer:
     """Test webtaskServer class"""
 
     def test_server_initialization(self):
@@ -17,6 +17,12 @@ class TestwebtaskServer:
         assert server.host == "localhost"
         assert server.port == 8000
         assert server.open_browser is True
+        
+    def test_webtask_handler_initialization(self):
+        """Test WebTaskHandler initialization"""
+        handler = WebTaskHandler(None, ('127.0.0.1', 12345), None)
+        assert hasattr(handler, 'directory')
+        assert 'static' in str(handler.directory)
 
     def test_server_initialization_with_params(self):
         """Test server initialization with custom parameters"""
@@ -29,8 +35,8 @@ class TestwebtaskServer:
 class TestMain:
     """Test main entry point"""
 
-    @patch('webtop.main.WebTopServer')
-    @patch('sys.argv', ['webtop'])
+    @patch('webtask.main.webtaskServer')
+    @patch('sys.argv', ['webtask'])
     def test_main_default_args(self, mock_server_class):
         """Test main function with default arguments"""
         mock_server = MagicMock()
@@ -45,8 +51,8 @@ class TestMain:
         )
         mock_server.run.assert_called_once()
 
-    @patch('webtop.main.WebTopServer')
-    @patch('sys.argv', ['webtop', '--host', '0.0.0.0', '--port', '9000', '--no-browser'])
+    @patch('webtask.main.webtaskServer')
+    @patch('sys.argv', ['webtask', '--host', '0.0.0.0', '--port', '9000', '--no-browser'])
     def test_main_custom_args(self, mock_server_class):
         """Test main function with custom arguments"""
         mock_server = MagicMock()
